@@ -46,6 +46,16 @@ services:
       net-172.20.0.0:
         ipv4_address: 172.20.0.104
     #command: tail -f /dev/null
+  sniffer:
+    image: gcc-core
+    container_name: sniffer
+    network_mode: host
+    tty: true
+    # command: ./sniffer
+    volumes:
+      - ./udp:/app
+    # net-172.20.0.0:
+    #   ipv4_address: 172.20.0.105
 
 networks:
   net-172.20.0.0:

@@ -30,7 +30,27 @@ To set up and run the network programming examples in Chapter 2, follow these st
    curl http://172.20.0.100:8081
    ```
 
+6. Set up udp
 
-udp
-
+```sh
 gcc udp_client.c -o udp_client.o
+```
+
+docker run multiple service
+
+```sh
+docker compose -f ./docker-compose_c2.yaml -p chap2 up -d sniffer udp-server cli-client1
+```
+
+```sh
+docker-compose -f docker-compose_c2.yaml down
+```
+
+```sh
+docker run --network host --name chap2-udp-client-1 gcc-core
+```
+
+```sh
+docker network disconnect bridge chap2-udp-client-1
+docker network connect host chap2-udp-client-1
+```
