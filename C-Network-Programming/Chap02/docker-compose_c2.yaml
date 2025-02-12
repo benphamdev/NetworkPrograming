@@ -28,6 +28,25 @@ services:
       net-172.20.0.0:
         ipv4_address: 172.20.0.102
     #command: tail -f /dev/null
+  udp-client:
+    image: gcc-core
+    volumes:
+      - ./udp:/app
+    tty: true
+    networks:
+      net-172.20.0.0:
+        ipv4_address: 172.20.0.103
+    #command: tail -f /dev/null
+  udp-server:
+    image: gcc-core
+    volumes:
+      - ./udp:/app
+    tty: true
+    networks:
+      net-172.20.0.0:
+        ipv4_address: 172.20.0.104
+    #command: tail -f /dev/null
+
 networks:
   net-172.20.0.0:
     name: net-172.20.0.0

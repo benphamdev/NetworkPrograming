@@ -13,6 +13,7 @@
 #define QUEUE_SIZE 10
 #define PORT 8081
 
+
 void error(const char *msg) {
     perror(msg);
     exit(1);
@@ -35,6 +36,11 @@ typedef struct {
 
 client_queue_t client_queue;
 
+/**
+    Initialize the client queue
+    Method to initialize the client queue.
+    This method initializes the front and rear pointers to 0, the count to 0, and initializes the mutex and semaphores.
+ */
 void queue_init(client_queue_t *q) {
     q->front = 0;
     q->rear = 0;
@@ -44,6 +50,12 @@ void queue_init(client_queue_t *q) {
     sem_init(&q->sem_empty, 0, QUEUE_SIZE);
 }
 
+/**
+    Push client info to the queue
+    Method to push client info to the queue.
+    This method pushes the client info to the queue and updates the rear pointer.
+    It also increments the count and signals the sem_filled semaphore.
+ */
 void queue_push(client_queue_t *q, client_info_t *client_info) {
     sem_wait(&q->sem_empty);
     pthread_mutex_lock(&q->mutex);
@@ -54,6 +66,12 @@ void queue_push(client_queue_t *q, client_info_t *client_info) {
     sem_post(&q->sem_filled);
 }
 
+/**
+    Pop client info from the queue
+    Method to pop client info from the queue.
+    This method pops the client info from the queue and updates the front pointer.
+    It also decrements the count and signals the sem_empty semaphore.
+ */
 client_info_t *queue_pop(client_queue_t *q) {
     sem_wait(&q->sem_filled);
     pthread_mutex_lock(&q->mutex);
@@ -65,6 +83,11 @@ client_info_t *queue_pop(client_queue_t *q) {
     return client_info;
 }
 
+/**
+    Handle client
+    Method to handle the client.
+    This method reads the message from the client, writes a response, and closes the connection.
+ */
 void *handle_client(void *arg) {
     while (1) {
         client_info_t *client_info = queue_pop(&client_queue);
@@ -100,6 +123,11 @@ void *handle_client(void *arg) {
     return NULL;
 }
 
+/**
+    Initialize server
+    Method to initialize the server.
+    This method creates a socket, initializes the socket structure, binds the socket, and listens for connections.
+ */
 void initialize_server(int *sockfd, struct sockaddr_in *serv_addr) {
     // Create socket
     *sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -121,6 +149,14 @@ void initialize_server(int *sockfd, struct sockaddr_in *serv_addr) {
     printf("TCP server listening on port %d\n", PORT);
 }
 
+/**
+    Create thread pool
+    Method to create a thread pool.
+    This method creates a thread pool of the specified size and initializes the threads.
+    Create a fixed pool of threads to handle client requests.
+    Reuses threads to handle multiple clients.
+    Avoids the overhead of creating and destroying threads for each client request.
+ */
 void create_thread_pool(pthread_t *thread_pool) {
     for (int i = 0; i < THREAD_POOL_SIZE; i++) {
         if (pthread_create(&thread_pool[i], NULL, handle_client, NULL) != 0) {
@@ -129,6 +165,12 @@ void create_thread_pool(pthread_t *thread_pool) {
     }
 }
 
+/**
+    Accept connections
+    Method to accept connections.
+    This method accepts connections from clients and pushes the client info to the queue.
+    Producer: Main thread accepting connections
+ */
 void accept_connections(int sockfd) {
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
