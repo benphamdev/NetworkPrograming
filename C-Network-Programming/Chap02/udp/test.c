@@ -26,7 +26,6 @@
 #include <linux/if_packet.h>
 #include <arpa/inet.h>
 
-
 /* MACRO declarations */
 #define MAX_ETHER       1518                            // max sniffing frame size
 #define MAX_FRAMES      64                              // number of frames to sniff
