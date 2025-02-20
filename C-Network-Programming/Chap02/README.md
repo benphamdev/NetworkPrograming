@@ -54,3 +54,21 @@ docker run --network host --name chap2-udp-client-1 gcc-core
 docker network disconnect bridge chap2-udp-client-1
 docker network connect host chap2-udp-client-1
 ```
+
+Note:
+
+# Clear DNS cache
+
+sudo systemd-resolve --flush-caches
+
+# Set DNS server to attacker's IP
+
+sudo sh -c 'echo "nameserver 192.168.255.3" > /etc/resolv.conf'
+
+# Test DNS resolution
+
+nslookup google.com 192.168.255.3
+
+# Try curl with verbose output
+
+curl -v google.com:8081

@@ -10,7 +10,7 @@
 #include <fcntl.h>
 
 #define MAX_EVENTS 10
-#define PORT 8081
+#define PORT 8081  // Keep port 8081 as requested
 
 typedef struct {
     int fd;
@@ -53,15 +53,20 @@ void handle_client(client_info_t *client) {
         close(client->fd);
         return;
     }
+    printf("[Web] Received request from %s:%d\n", client_ip, client_port);
     printf("Request from client %s:%d: %s\n", client_ip, client_port, buffer);
 
     // Write HTTP response
     const char *response =
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/html\r\n"
-        "Content-Length: 13\r\n"
+        "Connection: close\r\n"
+        "Content-Length: 200\r\n"
         "\r\n"
-        "Hello, World!";
+        "<html><body><h1>Hacked!</h1>"
+        "<p>This page has been intercepted by the attacker.</p>"
+        "<p>Original request was for: google.com</p>"
+        "</body></html>";
     n = write(client->fd, response, strlen(response));
     if (n < 0) {
         perror("ERROR writing to socket");
@@ -74,11 +79,16 @@ void handle_client(client_info_t *client) {
 int create_and_bind_socket() {
     int sockfd;
     struct sockaddr_in serv_addr;
+    int opt = 1;
 
     // Create socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
         error("ERROR opening socket");
+
+    // Thêm SO_REUSEADDR
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0)
+        error("ERROR on setsockopt");
 
     // Initialize socket structure
     bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -90,6 +100,7 @@ int create_and_bind_socket() {
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
         error("ERROR on binding");
 
+    printf("Web server bound to all interfaces on port %d\n", PORT);
     return sockfd;
 }
 
@@ -182,3 +193,5 @@ int main() {
 
     return 0;
 }
+
+

