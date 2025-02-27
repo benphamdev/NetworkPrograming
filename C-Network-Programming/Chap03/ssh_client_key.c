@@ -73,9 +73,9 @@ int main() {
     }
 
     // Set connection options
-    ssh_options_set(my_ssh_session, SSH_OPTIONS_HOST, "192.168.255.151");
+    ssh_options_set(my_ssh_session, SSH_OPTIONS_HOST, "192.168.255.151"); // Modify this IP
     ssh_options_set(my_ssh_session, SSH_OPTIONS_PORT, &(int){22});
-    ssh_options_set(my_ssh_session, SSH_OPTIONS_USER, "chienpham");
+    ssh_options_set(my_ssh_session, SSH_OPTIONS_USER, "chienpham"); // Modify this user
     
     // Set the specific private key path
     ssh_options_set(my_ssh_session, SSH_OPTIONS_IDENTITY, private_key_path);
@@ -106,7 +106,7 @@ int main() {
         
         // Get password from user
         char password[128];
-        printf("Enter password for %s: ", "chienpham");
+        printf("Enter password for %s: ", "chienpham"); // Modify this user
         // Disable echo
         system("stty -echo");
         fgets(password, sizeof(password), stdin);

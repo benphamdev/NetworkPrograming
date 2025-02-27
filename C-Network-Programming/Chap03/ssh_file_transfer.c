@@ -69,6 +69,11 @@ int upload_file(ssh_session session, const char *local_path, const char *remote_
 }
 
 // Function to download file from remote server using SFTP
+/*
+    The download_file function is similar to the upload_file function, but in reverse.
+    It opens a remote file for reading and a local file for writing, then reads data from the remote file and writes it to the local file.
+    The file size is determined by getting the file attributes using sftp_fstat, and the download progress is displayed as a percentage.
+*/
 int download_file(ssh_session session, const char *remote_path, const char *local_path) {
     sftp_session sftp;
     sftp_file file;
@@ -162,8 +167,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Set connection options
-    ssh_options_set(my_ssh_session, SSH_OPTIONS_HOST, "192.168.255.151");
-    ssh_options_set(my_ssh_session, SSH_OPTIONS_USER, "chienpham");
+    ssh_options_set(my_ssh_session, SSH_OPTIONS_HOST, "192.168.255.151");// Modify this IP
+    ssh_options_set(my_ssh_session, SSH_OPTIONS_USER, "chienpham");// Modify this user
 
     // Connect to server
     rc = ssh_connect(my_ssh_session);

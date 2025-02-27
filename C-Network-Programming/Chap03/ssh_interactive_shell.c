@@ -22,8 +22,8 @@ int main() {
     }
 
     // Set connection options
-    ssh_options_set(my_ssh_session, SSH_OPTIONS_HOST, "192.168.255.151");
-    ssh_options_set(my_ssh_session, SSH_OPTIONS_USER, "chienpham");
+    ssh_options_set(my_ssh_session, SSH_OPTIONS_HOST, "192.168.255.151"); // Modify this IP
+    ssh_options_set(my_ssh_session, SSH_OPTIONS_USER, "chienpham"); // Modify this user
     
     // Connect to server
     rc = ssh_connect(my_ssh_session);

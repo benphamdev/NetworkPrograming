@@ -20,7 +20,7 @@ int main() {
 
     ssh_options_set(my_ssh_session, SSH_OPTIONS_HOST, "172.19.0.2"); //Modify this ip
     ssh_options_set(my_ssh_session, SSH_OPTIONS_PORT, &(int){22}); 
-    ssh_options_set(my_ssh_session, SSH_OPTIONS_USER, "seed");
+    ssh_options_set(my_ssh_session, SSH_OPTIONS_USER, "seed"); // Modify this user
 
     rc = ssh_connect(my_ssh_session);
     if (rc != SSH_OK) {
@@ -29,7 +29,7 @@ int main() {
         exit(-1);
     }
 
-    rc = ssh_userauth_password(my_ssh_session, NULL, "dees");
+    rc = ssh_userauth_password(my_ssh_session, NULL, "dees"); // Modify this password
     if (rc != SSH_AUTH_SUCCESS) {
         fprintf(stderr, "Error authenticating: %s\n", ssh_get_error(my_ssh_session));
         ssh_disconnect(my_ssh_session);
