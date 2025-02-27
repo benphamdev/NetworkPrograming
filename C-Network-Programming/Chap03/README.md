@@ -46,4 +46,10 @@ Check the result
    ```
 
 example: http://localhost:9000 it loads the web page from the remote server<192.168.255.150>:80
-        
+
+
+References
+- https://stackoverflow.com/questions/43398962/ssh-local-port-forwarding-using-libssh
+- https://api.libssh.org/master/group__libssh__channel.html#gae86b0704a1f2bdebb268b55567f7f47b
+- https://api.libssh.org/stable/libssh_tutor_forwarding.html
+- https://stackoverflow.com/questions/18811781/c-can-i-forward-port-for-external-application-with-libssh
