@@ -43,6 +43,7 @@ Run the code
       ./ssh_tunnel <remotehost> <username> <password>
       example:
         ./ssh_tunnel 8080 80 localhost chienpham password
+        ./ssh_tunnel 192.168.255.150<remotehost> chienpham<username> 1234<password>
   ```
 
 Check the result
