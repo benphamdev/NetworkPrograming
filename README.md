@@ -20,12 +20,10 @@ This project focuses on network programming using C. It includes exercises to cr
 To run the project using Docker Compose, use the following command:
 
 ```sh
-docker compose -f ./docker-compose_c1.yaml -p network-container up -d
+docker compose -f ./docker-compose_c1.yaml -p chap1 up -d
 ```
 
 ## Usage
-
-
 
 ## Credits
 
@@ -50,5 +48,3 @@ If you created an application or package and would like other developers to cont
 ## Tests
 
 Go the extra mile and write tests for your application. Then provide examples on how to run them here.
-
-

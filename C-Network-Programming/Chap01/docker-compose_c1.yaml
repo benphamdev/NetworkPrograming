@@ -1,0 +1,24 @@
+services:
+  client:
+    build: .
+    image: gcc-core
+    volumes:
+      - ./:/app
+    tty: true
+    networks:
+      net-172.20.0.0:
+        ipv4_address: 172.20.0.100
+  client01:
+    image: gcc-core
+    volumes:
+      - ./:/app
+    tty: true
+    networks:
+      net-172.20.0.0:
+        ipv4_address: 172.20.0.101
+networks:
+  net-172.20.0.0:
+    name: net-172.20.0.0
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
