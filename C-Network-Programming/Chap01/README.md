@@ -66,7 +66,7 @@ This command sends the message "hello chien pham" to the server with the specifi
 Run the server program with IP header display:
 
 ```sh
-   ./ether_send.o -i
+   ./ether_dump.o -i
 ```
 
 Summary

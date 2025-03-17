@@ -143,7 +143,16 @@ void process_packet(struct packet_info *pi, int should_print_ip_header) {
 }
 
 int main(int argc, char *argv[]) {
-    int print_ip_header = (argc > 1 && strcmp(argv[1], "-i") == 0);
+    int print_ip_header = 0;
+    
+    // Cải thiện xử lý tham số dòng lệnh
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-i") == 0) {
+            print_ip_header = 1;
+            printf("IP header display enabled\n");
+        }
+    }
+    
     struct sockaddr_ll saddr = {0};
     unsigned char buffer[BUFFER_SIZE];
     struct packet_info pi = {0};
@@ -159,6 +168,12 @@ int main(int argc, char *argv[]) {
             close(pi.sockfd);
             exit(EXIT_FAILURE);
         }
+        
+        // Thêm log để debug
+        if (print_ip_header) {
+            printf("Processing packet with IP header display enabled\n");
+        }
+        
         process_packet(&pi, print_ip_header);
     }
 
