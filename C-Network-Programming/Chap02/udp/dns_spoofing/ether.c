@@ -76,12 +76,10 @@ int main(int argc, char *argv[]) {
         print_ip_header = 1;
     }
 
-
     int sockfd;
     struct sockaddr_ll saddr;
     unsigned char buffer[65536];
     struct ifreq ifr;
-
 
     // Create raw socket
     if ((sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0) {
@@ -120,7 +118,6 @@ int main(int argc, char *argv[]) {
         }
 
         printf("Received %d bytes\n", bytes_received);
-
 
         // Print Ethernet header
         struct ethhdr *eth_header = (struct ethhdr *)buffer;

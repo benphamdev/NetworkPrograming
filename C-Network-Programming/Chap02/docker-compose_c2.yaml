@@ -1,5 +1,5 @@
 services:
-  cli-server:
+  server:
     build: .
     image: gcc-core
     volumes:
@@ -9,7 +9,7 @@ services:
       net-172.20.0.0:
         ipv4_address: 172.20.0.100
     #command: tail -f /dev/null
-  cli-client:
+  client:
     build: .
     image: gcc-core
     volumes:
@@ -19,7 +19,7 @@ services:
       net-172.20.0.0:
         ipv4_address: 172.20.0.101
     #command: tail -f /dev/null
-  cli-client1:
+  client1:
     image: gcc-core
     volumes:
       - ./tcp_client:/app

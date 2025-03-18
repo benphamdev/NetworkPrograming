@@ -13,6 +13,8 @@
 #include <netinet/ip_icmp.h>
 
 #define ETH_HEADER_SIZE 14
+#define ETH_MIN_DATA_SIZE 46  // Minimum Ethernet data size
+#define ETH_MIN_FRAME_SIZE 60 // Min frame size without FCS (14 header + 46 data)
 #define INTERFACE "eth0"
 #define BUFFER_SIZE 65536
 
@@ -37,7 +39,7 @@ void print_payload_with_offset(unsigned char *payload, int len) {
     printf("Payload (Hex and ASCII) with Offset:\n");
     int i, j;
     for (i = 0; i < len; i++) {
-        if (i % 16 == 0) printf("%08x  ", i);
+        if (i % 16 == 0) printf("0x%08x  ", i);  // Changed to 0x%08x format
         printf("%02x ", payload[i]);
         
         if ((i + 1) % 16 == 0) {
@@ -127,6 +129,18 @@ void process_packet(struct packet_info *pi, int should_print_ip_header) {
     print_mac("Source MAC", pi->eth_header->h_source);
     print_mac("Destination MAC", pi->eth_header->h_dest);
     printf("EtherType: 0x%04x\n", ntohs(pi->eth_header->h_proto));
+
+    // Check for minimum frame size and padding
+    if (pi->bytes_received < ETH_MIN_FRAME_SIZE) {
+        printf("Frame contains padding (actual data: %d bytes, minimum required: %d bytes)\n", 
+               pi->payload_len, ETH_MIN_DATA_SIZE);
+        
+        // If the payload is less than minimum, the rest is padding (zeros)
+        int padding_bytes = ETH_MIN_DATA_SIZE - pi->payload_len;
+        if (padding_bytes > 0) {
+            printf("Padding: %d bytes of zeros added to meet minimum Ethernet frame size\n", padding_bytes);
+        }
+    }
 
     if (should_print_ip_header && ntohs(pi->eth_header->h_proto) == ETH_P_IP) {
         pi->ip_header = (struct iphdr *)pi->payload;

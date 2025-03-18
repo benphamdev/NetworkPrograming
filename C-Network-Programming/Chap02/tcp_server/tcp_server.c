@@ -18,7 +18,7 @@ int main() {
     struct sockaddr_in serv_addr, cli_addr;
     int n;
 
-    // Create socket
+    // 1. Socket type/Create tcp socket: connection-oriented stream socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
         error("ERROR opening socket");
@@ -34,19 +34,19 @@ int main() {
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
         error("ERROR on binding");
 
-    // Listen for connections
+    // 2. Connection Management/Listen for connections: required for tcp only
     listen(sockfd, 5);
     clilen = sizeof(cli_addr);
 
     printf("TCP server listening on port %d\n", portno);
 
     while (1) {
-        // Accept connection
+        //3. Client Handling/Accept connection, a new dedicated socket is created for each client
         newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
         if (newsockfd < 0) 
             error("ERROR on accept");
 
-        // Handle client in a separate loop
+        // 4. Client identification/Handle client in a separate loop
         while (1) {
             // Read from client
             bzero(buffer, 256);

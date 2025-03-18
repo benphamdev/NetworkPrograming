@@ -41,6 +41,8 @@ int main() {
 
     while (1) {
         len = sizeof(clientaddr);
+
+        // UDP just receives the message from any the client
         int n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0,
                          (struct sockaddr *)&clientaddr, &len);
         if (n < 0) {

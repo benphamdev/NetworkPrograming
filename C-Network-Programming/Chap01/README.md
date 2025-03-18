@@ -76,3 +76,9 @@ It also includes example commands for sending messages and displaying additional
 Makefilechange indentation in vscode:
 <https://bobbyhadz.com/blog/vscode-change-indentation>
 sed -i 's/^ /\t/'
+
+Referece:
+<https://www.geeksforgeeks.org/tcp-ip-packet-format/>
+<https://www.geeksforgeeks.org/ethernet-frame-format/>
+<https://www.geeksforgeeks.org/introduction-and-ipv4-datagram-header/>
+<https://en.wikipedia.org/wiki/Ethernet_frame>
