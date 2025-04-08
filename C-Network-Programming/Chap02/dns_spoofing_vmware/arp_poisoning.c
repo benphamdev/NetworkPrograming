@@ -89,7 +89,17 @@ t_ethernet_packet *create_ethernet_packet(const uint8_t *src_mac,
     return ethernet_packet;
 }
 
-// Hàm mạng
+// Network
+/**
+ * @brief Send packet to broadcast
+ * 
+ * @param sd 
+ * @param device 
+ * @param my_mac_address 
+ * @param source_ip 
+ * @param target_ip 
+ * @return char 
+ */
 char send_packet_to_broadcast(const int sd,
                             struct sockaddr_ll *device,
                             const uint8_t *my_mac_address,
@@ -119,6 +129,13 @@ char send_packet_to_broadcast(const int sd,
     return TRUE;
 }
 
+/**
+ * @brief Get the target response object
+ * 
+ * @param sd 
+ * @param target_ip 
+ * @return uint8_t* 
+ */
 uint8_t *get_target_response(const int sd, const char *target_ip) {
     char buffer[IP_MAXPACKET];
     t_ethernet_packet *ethernet_packet;
@@ -154,6 +171,17 @@ uint8_t *get_target_response(const int sd, const char *target_ip) {
     }
 }
 
+/**
+ * @brief 
+ * 
+ * @param sd 
+ * @param device 
+ * @param my_mac_address 
+ * @param spoofed_ip 
+ * @param target_mac 
+ * @param target_ip 
+ * @return char 
+ */
 char send_poison_packet(const int sd,
                        struct sockaddr_ll *device,
                        const uint8_t *my_mac_address,
@@ -188,6 +216,13 @@ void usage(const char prog_name[]) {
     fprintf(stderr, "Usage: %s <gateway_ip> <victim_ip> <interface>\n", prog_name);
 }
 
+// Interface
+/**
+ * @brief Get the my mac address object
+ * 
+ * @param interface 
+ * @return uint8_t* 
+ */
 uint8_t *get_my_mac_address(const char *interface) {
     int sd;
     struct ifreq ifr;
@@ -222,6 +257,13 @@ uint8_t *get_my_mac_address(const char *interface) {
     return mac;
 }
 
+/**
+ * @brief Get the index from interface object
+ * 
+ * @param device 
+ * @param interface 
+ * @return int 
+ */
 int get_index_from_interface(struct sockaddr_ll *device, const char *interface) {
     device->sll_ifindex = if_nametoindex(interface);
     device->sll_family = AF_PACKET;
@@ -234,6 +276,11 @@ int get_index_from_interface(struct sockaddr_ll *device, const char *interface) 
     return TRUE;
 }
 
+/**
+ * @brief Set the up network object
+ * 
+ * @param interface 
+ */
 void setup_network(const char *interface) {
     char cmd[256];
 
@@ -253,6 +300,11 @@ void setup_network(const char *interface) {
     fprintf(stdout, "[+] Network configured for %s\n", interface);
 }
 
+/**
+ * @brief Cleanup network
+ * 
+ * @param interface 
+ */
 void cleanup_network(const char *interface) {
     char cmd[256];
 
