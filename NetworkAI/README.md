@@ -18,6 +18,7 @@ This project enhances network security analysis by integrating OpenAI's API to p
    ```
 
 2. Set up your OpenAI API key in the `.env` file:
+
    ```
    OPEN_AI_API_KEY=your_api_key_here
    ```
@@ -67,3 +68,12 @@ To try out the tool with sample data:
 ## Note
 
 This tool uses the OpenAI API, which has usage costs. The sample size parameter helps control API usage by limiting the number of log entries sent for analysis.
+
+### References
+
+- [OpenAI API Documentation](https://platform.openai.com/docs/guides/error-codes/api-errors)
+- [Pandas Documentation](https://pandas.pydata.org/docs/)
+- [Streamlit Documentation](https://docs.streamlit.io/library/get-started)
+- [Python](https://www.askpython.com/python/examples/import-py-files-google-colab)
+- [Import Python Project To Colob](https://saturncloud.io/blog/importing-py-files-in-google-colab/)
+- [Import Python Project To Colob](https://stackoverflow.com/questions/48905127/importing-py-files-in-google-colab)
