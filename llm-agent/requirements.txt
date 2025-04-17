@@ -8,5 +8,5 @@ duckduckgo-search
 langchain_experimental
 langchain_litellm
 smolagents
-'smolagents[telemetry]'
+smolagents[telemetry]
 
