@@ -1,7 +1,6 @@
 from smolagents import CodeAgent, HfApiModel
 from dotenv import load_dotenv
 import os
-from rich import print
 
 load_dotenv()
 
