@@ -19,6 +19,7 @@ def main():
     
     # Tải API key từ file .env
     load_dotenv()
+    
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
         raise ValueError("Vui lòng đặt DEEPSEEK_API_KEY trong file .env của bạn")
