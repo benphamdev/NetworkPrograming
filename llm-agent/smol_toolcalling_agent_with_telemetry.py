@@ -33,6 +33,7 @@ tracer = None
 
 class BaseLLM(ABC):
     """Abstract base class for language model implementations"""
+    kind = "llm"
     
     @abstractmethod
     def generate(self, messages: List[Dict[str, Any]], tools=None, **kwargs) -> Dict[str, Any]:
@@ -41,6 +42,7 @@ class BaseLLM(ABC):
 
 class LiteLLMModel(BaseLLM):
     """LiteLLM implementation of the BaseLLM interface"""
+    kind = "llm"
     
     def __init__(self, model_name: str, api_key: str, parameters: Dict[str, Any] = None):
         self.model_name = model_name
@@ -89,6 +91,7 @@ class LiteLLMModel(BaseLLM):
 
 class Memory(ABC):
     """Abstract base class for memory implementations"""
+    kind = "memory"
     
     @abstractmethod
     def add(self, message: Dict[str, Any]) -> None:
@@ -107,6 +110,7 @@ class Memory(ABC):
 
 class ConversationMemory(Memory):
     """Simple implementation of Memory that stores messages in a list"""
+    kind = "memory"
     
     def __init__(self):
         self.messages = []
@@ -125,6 +129,8 @@ class ConversationMemory(Memory):
 # =============================================
 
 class Tool:
+    kind = "tool"
+    
     def __init__(self, name: str, description: str, function: Callable, parameters: Dict = None, returns: str = None):
         self.name = name
         self.description = description
@@ -147,6 +153,8 @@ class Tool:
         }
 
 class DuckDuckGoSearchTool(Tool):
+    kind = "tool"
+    
     def __init__(self):
         parameters = {
             "query": {
@@ -173,6 +181,8 @@ class DuckDuckGoSearchTool(Tool):
             return result
 
 class VisitWebpageTool(Tool):
+    kind = "tool"
+    
     def __init__(self):
         parameters = {
             "url": {
@@ -204,6 +214,7 @@ class VisitWebpageTool(Tool):
 
 class NetworkPacketAnalyzerTool(Tool):
     """Tool for analyzing network packets"""
+    kind = "tool"
     
     def __init__(self):
         parameters = {
@@ -238,6 +249,7 @@ class NetworkPacketAnalyzerTool(Tool):
 
 class CodeSecurityScannerTool(Tool):
     """Tool for scanning network code for security vulnerabilities"""
+    kind = "tool"
     
     def __init__(self):
         parameters = {
@@ -273,6 +285,7 @@ class CodeSecurityScannerTool(Tool):
 
 class ProtocolDocumentationTool(Tool):
     """Tool for retrieving documentation about network protocols"""
+    kind = "tool"
     
     def __init__(self):
         parameters = {
@@ -306,6 +319,7 @@ class ProtocolDocumentationTool(Tool):
 
 class Chain(ABC):
     """Abstract base class for chain implementations"""
+    kind = "chain"
     
     @abstractmethod
     def run(self, input_data: Any) -> Any:
@@ -314,6 +328,7 @@ class Chain(ABC):
 
 class LLMChain(Chain):
     """Chain for simple LLM-based operations"""
+    kind = "chain"
     
     def __init__(self, llm: BaseLLM, prompt_template: str, output_key: str = "result"):
         self.llm = llm
@@ -349,6 +364,7 @@ class LLMChain(Chain):
 
 class SequentialChain(Chain):
     """Chain for running multiple chains in sequence"""
+    kind = "chain"
     
     def __init__(self, chains: List[Chain], input_variables: List[str], output_variables: List[str]):
         self.chains = chains
@@ -385,6 +401,8 @@ class SequentialChain(Chain):
 
 # Agent definitions
 class Agent:
+    kind = "agent"
+    
     def __init__(self, name: str, description: str, tools: List[Tool], llm: BaseLLM, memory: Memory):
         self.name = name
         self.description = description
@@ -508,6 +526,8 @@ class Agent:
                 return f"Error: {str(e)}"
 
 class ManagerAgent(Agent):
+    kind = "agent"
+    
     def __init__(self, name: str, description: str, tools: List[Tool], managed_agents: List[Agent], llm: BaseLLM, memory: Memory):
         super().__init__(name, description, tools, llm, memory)
         self.managed_agents = managed_agents
@@ -584,6 +604,7 @@ For this specific query, determine which agent(s) would be most helpful and use 
 
 class NetworkAnalysisAgent(Agent):
     """Agent specialized in network analysis"""
+    kind = "agent"
     
     def __init__(self, name: str, description: str, tools: List[Tool], llm: BaseLLM, memory: Memory):
         super().__init__(name, description, tools, llm, memory)
@@ -595,6 +616,7 @@ Always provide detailed explanations that would help a network engineer understa
 
 class CodeAnalysisAgent(Agent):
     """Agent specialized in code analysis"""
+    kind = "agent"
     
     def __init__(self, name: str, description: str, tools: List[Tool], llm: BaseLLM, memory: Memory):
         super().__init__(name, description, tools, llm, memory)
@@ -606,6 +628,7 @@ When suggesting improvements, provide concrete code examples.""")
 
 class ProtocolExpertAgent(Agent):
     """Agent specialized in network protocols"""
+    kind = "agent"
     
     def __init__(self, name: str, description: str, tools: List[Tool], llm: BaseLLM, memory: Memory):
         super().__init__(name, description, tools, llm, memory)

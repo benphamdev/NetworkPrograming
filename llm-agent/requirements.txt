@@ -9,5 +9,7 @@ langchain_experimental
 langchain_litellm
 smolagents
 smolagents[telemetry]
+smolagents[gradio]
 arize-phoenix-otel
 openinference-instrumentation-smolagents
+scapy
