@@ -1,0 +1,10 @@
+matplotlib
+scapy
+smolagents
+smolagents[telemetry]
+smolagents[gradio]
+smolagents[litellm]
+openinference-instrumentation-smolagents
+python-dotenv
+arize-phoenix
+networkx
