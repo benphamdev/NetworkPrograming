@@ -1,221 +1,158 @@
-# Giải thích về TCP Segment
+# Network Packet Analyzer
 
-**TCP segment** là đơn vị dữ liệu cơ bản mà giao thức TCP sử dụng để truyền thông. Khi dữ liệu được gửi qua TCP, nó được chia thành các segment (đoạn) để gửi qua mạng.
+Công cụ phân tích gói tin mạng để phát hiện các cuộc tấn công như ARP spoofing, SYN flood, ICMP flood và các hoạt động đáng ngờ khác.
 
-## Cấu trúc của một TCP segment
+## Tính năng
 
-- **Header** (20-60 byte):
-  - **Source Port**, **Destination Port**: Cổng nguồn và đích.
-  - **Sequence Number**: Số thứ tự để theo dõi thứ tự các segment.
-  - **Acknowledgment Number**: Xác nhận segment đã nhận.
-  - **Flags**: Các cờ như `SYN`, `ACK`, `FIN`, `RST` để điều khiển kết nối.
-  - **Window Size**: Kích thước cửa sổ để kiểm soát luồng dữ liệu.
-  - **Checksum**: Kiểm tra lỗi.
-- **Payload (dữ liệu)**: Phần dữ liệu thực tế (ví dụ: nội dung HTTP, FTP).
+- Phân tích file pcap để phát hiện các cuộc tấn công mạng
+- Hỗ trợ phân tích nhiều loại giao thức (TCP, UDP, ICMP, ARP)
+- Phát hiện các loại tấn công phổ biến:
+  - SYN flood
+  - ARP spoofing
+  - Port scanning
+  - ICMP flood
+  - Reset attacks
+- Trực quan hóa luồng mạng và các cuộc tấn công
+- Tích hợp SmolaAgent AI để phân tích thông minh (cần API key)
+- Hai loại giao diện:
+  - Giao diện dòng lệnh thân thiện với người dùng
+  - Giao diện web trực quan với biểu đồ và đồ thị
 
-## Vai trò trong phân tích
+## Cài đặt
 
-- Phân tích TCP segment giúp bạn hiểu cách dữ liệu được chia nhỏ, gửi, và tái tạo.
-- Phát hiện bất thường (như sequence number không khớp, flags bất thường) có thể chỉ ra lỗi hoặc tấn công.
+### Yêu cầu
+- Python 3.8+
+- Scapy
+- Matplotlib, NetworkX, Seaborn, Plotly
+- Gradio (cho giao diện web)
+- SmolaAgent (tùy chọn, cho phân tích AI)
 
----
-
-# PCAP Packet Analyzer - Phân tích TCP Segment với tcpdump và smolagent
-
-## 1. Tiêu đề đề tài
-
-**PCAP Packet Analyzer:** Phân tích TCP Segment bằng `tcpdump` với hỗ trợ tự động từ `smolagent`
-
-## 2. Mục tiêu của đề tài
-
-- Sử dụng `tcpdump` để ghi lại và phân tích các TCP segment trong lưu lượng mạng.
-- Tích hợp `smolagent` để tự động hóa phân tích TCP segment (phát hiện bất thường, tái tạo luồng, tạo báo cáo).
-- Phân tích các đặc điểm của TCP segment (header, flags, sequence number) và phát hiện bất thường (SYN flood, reset bất thường, lỗi truyền dữ liệu).
-- Đưa ra đề xuất bảo mật dựa trên kết quả.
-
-## 3. Lý do chọn đề tài
-
-- **Yêu cầu của thầy:** Sử dụng `tcpdump` để phân tích TCP, tập trung vào TCP segment.
-- **Tính thực tiễn:** Hiểu và phân tích TCP segment là kỹ năng cốt lõi trong an ninh mạng, giúp phát hiện lỗi và tấn công.
-- **Tích hợp smolagent:** Tăng tính tự động hóa và thông minh trong phân tích.
-
-## 4. Phạm vi nghiên cứu
-
-- Tập trung vào TCP segment (header và payload), sử dụng `tcpdump` để phân tích.
-- Tích hợp `smolagent` để tự động hóa (phát hiện bất thường, tái tạo luồng TCP).
-- Phân tích các tình huống: kết nối TCP, lỗi (retransmission, RST), tấn công (SYN flood, session hijacking).
-
-## 5. Giả định về smolagent
-
-`smolagent` là một tác nhân phần mềm (agent) do nhóm smolagent phát triển, có khả năng:
-
-- Đọc tệp PCAP hoặc đầu ra từ `tcpdump`.
-- Phân tích TCP segment (sequence number, flags, payload).
-- Phát hiện bất thường (như SYN flood, sequence number không khớp).
-- Tạo báo cáo tự động (thống kê, biểu đồ).
-
-## 6. Nội dung chính của đề tài
-
-### 6.1. Tổng quan về TCP Segment, tcpdump và smolagent
-
-- **Giới thiệu TCP Segment:**
-  - TCP segment là đơn vị dữ liệu của TCP, gồm header (source/destination port, sequence number, flags, window size) và payload.
-  - Quy trình: Dữ liệu được chia thành segment → gửi → tái tạo tại đích.
-- **Giới thiệu tcpdump:**
-  - Công cụ dòng lệnh để ghi lại và phân tích gói tin, hỗ trợ phân tích TCP segment.
-- **Giới thiệu smolagent:**
-  - Tác nhân thông minh hỗ trợ tự động hóa phân tích TCP segment (phát hiện bất thường, tái tạo luồng).
-
-### 6.2. Công cụ và phương pháp phân tích
-
-- **Công cụ:**
-
-  - `tcpdump`: Capture và phân tích TCP segment.
-  - `smolagent`: Tự động hóa phân tích.
-  - Linux/Unix: Môi trường chính.
-  - Python (tùy chọn): Dùng để tích hợp smolagent với tcpdump.
-
-- **Phương pháp:**
-
-  - **Ghi lại lưu lượng:**
+### Cài đặt thông qua pip
 
         ```bash
-        tcpdump -i eth0 tcp -w tcp_segments.pcap
-        ```
+# Clone repository
+git clone https://github.com/username/network-packet-analyzer.git
+cd network-packet-analyzer
 
-  - **Phân tích TCP segment bằng tcpdump:**
+# Cài đặt các thư viện phụ thuộc
+pip install -r requirements.txt
+```
 
-        ```bash
-        # Đọc tệp PCAP
-        tcpdump -r tcp_segments.pcap
+### Cấu hình SmolaAgent (tùy chọn)
 
-        # Xem chi tiết segment
-        tcpdump -r tcp_segments.pcap -v
+Để sử dụng SmolaAgent, bạn cần:
 
-        # Lọc flags cụ thể (ví dụ: SYN)
-        tcpdump -r tcp_segments.pcap 'tcp[tcpflags] & tcp-syn != 0'
-        ```
+1. Tạo file `.env` trong thư mục gốc của dự án
+2. Thêm API key của bạn vào file:
 
-  - **Tích hợp smolagent:**
+```
+DEEPSEEK_API_KEY=your-api-key-here
+```
 
-        ```bash
-        # Xuất dữ liệu từ tcpdump
-        tcpdump -r tcp_segments.pcap > segments.txt
-        ```
+## Sử dụng
 
-    - Smolagent xử lý:
-      - Phân tích sequence number, flags, window size.
-      - Phát hiện bất thường (sequence number không khớp, nhiều gói SYN).
-      - Tái tạo luồng TCP (nếu có payload, ví dụ nội dung HTTP).
+### Giao diện web (Khuyến nghị)
 
-### 6.3. Phân tích các trường hợp cụ thể
-
-- **Kết nối TCP bình thường:**
-
-  - Ghi lại lưu lượng HTTP:
+Chạy giao diện web tương tác:
 
         ```bash
-        tcpdump -i eth0 tcp port 80 -w http_segments.pcap
-        ```
+python web_interface.py
+```
 
-  - Phân tích TCP segment:
-    - Kiểm tra 3-way handshake (SYN → SYN-ACK → ACK).
-    - Xem sequence number tăng đều, window size ổn định.
-  - Smolagent: Tự động xác nhận kết nối hợp lệ, tái tạo luồng HTTP (nếu có).
+Truy cập giao diện web tại http://localhost:7860 trong trình duyệt của bạn.
 
-- **Lỗi trong TCP segment:**
+Giao diện web bao gồm các tab:
+- **Phân tích PCAP**: Tải lên và phân tích file pcap
+- **Giám sát thời gian thực**: Theo dõi lưu lượng mạng theo thời gian thực
+- **Chi tiết tấn công**: Xem chi tiết các cuộc tấn công đã phát hiện
+- **Thống kê luồng**: Xem thống kê về luồng mạng
 
-  - **Retransmission:** Sequence number lặp lại (dấu hiệu mất gói).
+### Giao diện dòng lệnh
 
-        ```bash
-        tcpdump -r tcp_segments.pcap | grep "seq"
-        ```
-
-  - Smolagent: Tự động phát hiện và đếm số lần retransmission.
-  - **RST bất thường:** Tìm gói có cờ RST.
+#### Phân tích file pcap
 
         ```bash
-        tcpdump -r tcp_segments.pcap 'tcp[tcpflags] & tcp-rst != 0'
+python main.py analyze path/to/your/file.pcap
+```
+
+#### Liệt kê các file pcap có sẵn
+
+        ```bash
+python main.py list
         ```
 
-  - Smolagent: Cảnh báo nếu RST xuất hiện bất thường (không có FIN trước đó).
+#### Giám sát lưu lượng trong thời gian thực
 
-- **Tấn công liên quan đến TCP segment:**
+        ```bash
+python main.py monitor --duration 10
+```
 
-  - **SYN flood:**
-
-    - Ghi lại lưu lượng giả lập:
+#### Xem thống kê luồng
 
             ```bash
-            hping3 -S -p 80 --flood <target_ip>
+python main.py stats --hours 1
             ```
 
-    - Phân tích:
+#### Xem các cuộc tấn công đã phát hiện
 
             ```bash
-            tcpdump -r syn_flood.pcap 'tcp[tcpflags] & tcp-syn != 0'
-            ```
+python main.py attacks --hours 24
+```
 
-    - Smolagent: Đếm số gói SYN, cảnh báo nếu vượt ngưỡng (ví dụ: >500 SYN trong 10 giây).
+## Cấu trúc dự án
 
-  - **Session hijacking:**
-    - Kiểm tra sequence number bất thường (có thể do kẻ tấn công chèn gói giả mạo).
-    - Phân tích sequence number và acknowledgment number.
-    - Smolagent: Phát hiện sequence number không khớp với luồng.
+Dự án tuân theo kiến trúc Clean Architecture:
 
-### 6.4. Kết quả và phát hiện
+```
+src/
+  ├── domain/                 # Core business entities
+  │   ├── entities/           # Core domain entities
+  │   │   ├── packet.py       # Basic packet entity
+  │   │   ├── attack.py       # Attack entity
+  │   │   └── flow.py         # Network flow entity
+  │   └── repositories/       # Repository interfaces
+  │       ├── packet_repository.py
+  │       └── attack_repository.py
+  ├── use_cases/              # Application business logic
+  │   ├── analyze_packet_use_case.py
+  │   ├── detect_attack_use_case.py
+  │   └── visualize_flow_use_case.py
+  ├── interfaces/             # Interface adapters
+  │   ├── controllers/
+  │   │   └── packet_analyzer_controller.py
+  │   ├── gateways/
+  │   │   ├── scapy_packet_gateway.py
+  │   │   └── smolagent_gateway.py
+  │   └── presenters/
+  │       ├── cli_presenter.py 
+  │       ├── visualization_presenter.py
+  │       └── gradio_presenter.py
+  └── infrastructure/         # External frameworks & tools
+      ├── repositories/
+      │   ├── file_packet_repository.py
+      │   └── memory_attack_repository.py
+      ├── smolagent/
+      │   └── deep_seek_agent.py
+      └── visualizers/
+          └── matplotlib_visualizer.py
+main.py                      # CLI entry point
+web_interface.py            # Web interface entry point
+```
 
-- **Kết quả từ tcpdump:**
-  - Ví dụ: Phân tích TCP segment trong lưu lượng HTTP, xác định 3-way handshake.
-  - Ví dụ: Phát hiện 800 gói SYN trong 10 giây (SYN flood).
-- **Kết quả từ smolagent:**
-  - Tự động phát hiện: "Cảnh báo: SYN flood với 800 gói SYN trong 10 giây".
-  - Thống kê: Số lượng gói SYN, ACK, RST; tỷ lệ retransmission.
-  - Tái tạo luồng: Hiển thị nội dung HTTP (nếu có).
-- **So sánh:** Hiệu quả phân tích thủ công (`tcpdump`) và tự động (`smolagent`).
+## Các cảnh báo tấn công
 
-### 6.5. Đề xuất cải thiện bảo mật
+Tool sẽ phát hiện các loại tấn công sau:
 
-- Cấu hình firewall chặn SYN flood:
+1. **SYN Flood**: Khi có một lượng lớn gói SYN được gửi đến một máy chủ
+2. **ARP Spoofing**: Khi có nhiều địa chỉ MAC khác nhau cho cùng một địa chỉ IP
+3. **Port Scanning**: Khi có nhiều cổng được quét từ cùng một địa chỉ nguồn
+4. **ICMP Flood**: Khi có quá nhiều gói ICMP echo request gửi đến
+5. **Reset Attacks**: Khi có bất thường về số lượng gói RST
 
-  ```bash
-  iptables -A INPUT -p tcp --syn -m limit --limit 5/s -j ACCEPT
-  ```
+## Đóng góp
 
-- Dùng smolagent để giám sát TCP segment trong thời gian thực.
-- Mã hóa dữ liệu (HTTPS) để tránh rò rỉ payload trong TCP segment.
+Đóng góp rất được hoan nghênh! Vui lòng tạo issue hoặc pull request nếu bạn muốn cải thiện công cụ này.
 
-## 7. Kế hoạch thực hiện
+## Giấy phép
 
-1. **Tuần 1:** Tìm hiểu TCP segment và tcpdump.
-2. **Tuần 2:** Tìm hiểu smolagent (cách tích hợp, khả năng phân tích TCP segment).
-3. **Tuần 3:** Ghi lại lưu lượng TCP (HTTP, tấn công giả lập).
-4. **Tuần 4-5:** Phân tích TCP segment bằng tcpdump, tích hợp smolagent.
-5. **Tuần 6:** Viết báo cáo, trình bày kết quả.
-
-## 8. Tài liệu tham khảo
-
-- Tài liệu tcpdump: [tcpdump.org](https://www.tcpdump.org/)
-- TCP: RFC 793.
-- Blog: packetlife.net, TryHackMe.
-- Tài liệu smolagent: Giả định nhóm smolagent cung cấp.
-
-## 9. Kết quả mong đợi
-
-- Hiểu rõ cấu trúc TCP segment và cách phân tích bằng tcpdump.
-- Tích hợp smolagent để tự động hóa phân tích TCP segment.
-- Báo cáo chi tiết với ví dụ thực tế (kết nối, lỗi, tấn công).
-
----
-
-## Lưu ý khi thực hiện
-
-- **Phân tích TCP segment:**
-  - Tập trung vào các trường trong header (sequence number, flags, window size).
-  - Dùng tcpdump với tùy chọn `-v` hoặc `-X` để xem chi tiết segment.
-- **Tích hợp smolagent:**
-  - Nếu smolagent chưa có khả năng phân tích TCP segment, bạn có thể viết script Python (dùng Scapy) để hỗ trợ smolagent đọc và phân tích sequence number, flags.
-- **Thử nghiệm:**
-  - Ghi lại lưu lượng TCP thực tế (truy cập HTTP) hoặc giả lập tấn công (hping3 trong lab).
-
-Nếu bạn cần hỗ trợ thêm (ví dụ: lệnh tcpdump chi tiết để phân tích TCP segment, hoặc script mẫu cho smolagent), hãy cho tôi biết nhé!
+MIT License
