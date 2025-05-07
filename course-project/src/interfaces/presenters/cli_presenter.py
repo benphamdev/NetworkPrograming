@@ -1,10 +1,8 @@
 """
 CLI Presenter - Formats and presents analysis results on command line.
 """
-from typing import Dict, Any, List, Optional
-import json
+from typing import Dict, Any, List
 from datetime import datetime
-import textwrap
 from colorama import Fore, Style, init
 
 

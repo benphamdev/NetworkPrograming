@@ -1,7 +1,7 @@
 """
 Packet Analyzer Controller - Handles user interactions for packet analysis.
 """
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List
 from datetime import datetime, timedelta
 
 from src.use_cases.analyze_packet_use_case import AnalyzePacketUseCase
@@ -29,7 +29,12 @@ class PacketAnalyzerController:
         packet_results, flow_stats = self.analyze_packet_use_case.analyze_pcap_file(file_path)
         
         # Detect attacks
-        attacks = self.detect_attack_use_case.detect_all_attacks()
+        attack_dict = self.detect_attack_use_case.detect_attacks()
+        
+        # Flatten the attacks list for easier reporting
+        all_attacks = []
+        for attack_type, attacks in attack_dict.items():
+            all_attacks.extend(attacks)
         
         # Create visualizations
         flow_graph = self.visualize_flow_use_case.visualize_tcp_flows()
@@ -38,8 +43,9 @@ class PacketAnalyzerController:
         # Return comprehensive results
         return {
             "flow_statistics": flow_stats,
-            "attack_count": len(attacks),
-            "attacks": [attack.to_dict() for attack in attacks],
+            "attack_count": len(all_attacks),
+            "attacks": [attack.to_dict() for attack in all_attacks],
+            "attack_types": {attack_type: len(attacks) for attack_type, attacks in attack_dict.items()},
             "visualizations": {
                 "flow_graph": flow_graph,
                 "protocol_distribution": protocol_dist
@@ -49,9 +55,17 @@ class PacketAnalyzerController:
     def get_attack_details(self, timeframe_hours: int = 24) -> List[Dict[str, Any]]:
         """Get details of detected attacks."""
         timeframe = timedelta(hours=timeframe_hours)
-        attacks = self.detect_attack_use_case.detect_all_attacks(timeframe)
+        attack_dict = self.detect_attack_use_case.detect_attacks(timeframe)
         
-        return [attack.to_dict() for attack in attacks]
+        # Flatten attacks and convert to dict
+        all_attacks = []
+        for attack_type, attacks in attack_dict.items():
+            for attack in attacks:
+                attack_dict = attack.to_dict()
+                attack_dict["attack_type_category"] = attack_type  # Add the attack type category
+                all_attacks.append(attack_dict)
+        
+        return all_attacks
     
     def get_flow_statistics(self, timeframe_hours: int = 1) -> Dict[str, Any]:
         """Get flow statistics."""
@@ -89,11 +103,16 @@ class PacketAnalyzerController:
         
         # In a real implementation, this would actively monitor traffic
         # For now, we'll just analyze the most recent timeframe
-        attacks = self.detect_attack_use_case.detect_all_attacks(timeframe)
+        attack_dict = self.detect_attack_use_case.detect_attacks(timeframe)
         
-        if attacks:
-            print(f"⚠️ Detected {len(attacks)} potential attacks!")
-            for attack in attacks:
+        # Flatten the attacks list
+        all_attacks = []
+        for attack_type, attacks in attack_dict.items():
+            all_attacks.extend(attacks)
+        
+        if all_attacks:
+            print(f"⚠️ Detected {len(all_attacks)} potential attacks!")
+            for attack in all_attacks:
                 print(f"- {attack.description} (Confidence: {attack.confidence:.2f}, Severity: {attack.severity}/10)")
         else:
             print("✅ No attacks detected during the monitoring period.")
@@ -101,6 +120,7 @@ class PacketAnalyzerController:
         return {
             "start_time": start_time.isoformat(),
             "end_time": end_time.isoformat(),
-            "attack_count": len(attacks),
-            "attacks": [attack.to_dict() for attack in attacks]
+            "attack_count": len(all_attacks),
+            "attacks": [attack.to_dict() for attack in all_attacks],
+            "attack_types": {attack_type: len(attacks) for attack_type, attacks in attack_dict.items()}
         } 

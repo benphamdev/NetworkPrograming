@@ -3,7 +3,6 @@
 Web Interface - Launch the web-based interface for Network Packet Analyzer.
 """
 import os
-import sys
 from src.interfaces.presenters.gradio_presenter import GradioPresenter
 from main import setup_dependencies
 

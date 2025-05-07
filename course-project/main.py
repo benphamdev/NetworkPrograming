@@ -8,17 +8,12 @@ ARP spoofing, SYN floods, ICMP floods, and other suspicious activities.
 import argparse
 import os
 import time
-from datetime import datetime, timedelta
 
-from src.domain.repositories.packet_repository import PacketRepository
-from src.domain.repositories.flow_repository import FlowRepository
-from src.domain.repositories.attack_repository import AttackRepository
 
 from src.infrastructure.repositories.file_packet_repository import FilePacketRepository
 from src.infrastructure.repositories.memory_flow_repository import MemoryFlowRepository
 from src.infrastructure.repositories.memory_attack_repository import MemoryAttackRepository
 
-from src.interfaces.gateways.scapy_packet_gateway import ScapyPacketGateway
 from src.interfaces.gateways.smolagent_gateway import SmolagentGateway
 
 from src.interfaces.presenters.cli_presenter import CLIPresenter
