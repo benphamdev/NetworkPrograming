@@ -93,16 +93,16 @@ class PacketAnalyzerController:
             "flow_states": flow_states
         }
     
-    def detect_attacks_realtime(self, duration_minutes: int = 5) -> Dict[str, Any]:
+    def detect_attacks_realtime(self, duration_minutes: int = 30) -> Dict[str, Any]:
         """Monitor traffic for attacks in real-time for a specified duration."""
         timeframe = timedelta(minutes=duration_minutes)
         start_time = datetime.now()
         end_time = start_time + timeframe
         
         print(f"Monitoring traffic for attacks from {start_time.strftime('%H:%M:%S')} to {end_time.strftime('%H:%M:%S')}...")
+        print("Lưu ý: Đang bỏ qua timeframe và phân tích tất cả các gói tin")
         
-        # In a real implementation, this would actively monitor traffic
-        # For now, we'll just analyze the most recent timeframe
+        # Phát hiện tấn công từ tất cả gói tin có sẵn mà không quan tâm đến thời gian
         attack_dict = self.detect_attack_use_case.detect_attacks(timeframe)
         
         # Flatten the attacks list

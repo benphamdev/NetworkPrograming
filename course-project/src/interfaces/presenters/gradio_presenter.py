@@ -86,11 +86,11 @@ class GradioPresenter:
         return summary, attack_table, protocol_chart, attack_chart, flow_graph, tcp_visualizations
     
     def get_detailed_tcp_analysis(self) -> str:
-        """Lấy phân tích chi tiết TCP cho tab chi tiết AI."""
+        """Lấy phân tích chi tiết theo mô hình OSI cho tab chi tiết AI."""
         if not self.base_presenter.latest_results:
             return "Chưa có dữ liệu phân tích. Vui lòng tải lên file PCAP trước."
         
-        return self.analyzer.create_tcp_analysis(self.base_presenter.latest_results)
+        return self.analyzer.create_osi_analysis(self.base_presenter.latest_results)
     
     def start_monitoring(self, duration_minutes: int) -> str:
         """Bắt đầu giám sát thời gian thực."""
@@ -261,7 +261,8 @@ class GradioPresenter:
                         - Phân tích rủi ro mạng trong dữ liệu
                         - Cách giảm thiểu các cuộc tấn công đã phát hiện
                         - File này có phát hiện tấn công nào không?
-                        - Phân tích các kết nối TCP bất thường
+                        - Phân tích lưu lượng mạng theo mô hình OSI
+                        - Phân tích các vấn đề ở tầng mạng (Network) và tầng giao vận (Transport)
                         """)
                         
                         clear_chat_btn = gr.Button("Xóa lịch sử chat", variant="secondary")
@@ -278,15 +279,15 @@ class GradioPresenter:
             with gr.Tab("Phân tích AI chi tiết"):
                 with gr.Row():
                     with gr.Column():
-                        gr.Markdown("### Phân tích AI chi tiết về luồng TCP và các tấn công")
-                        ai_analysis_detail = gr.Markdown("Tải lên file PCAP trong tab 'Phân tích PCAP' để xem phân tích chi tiết...")
+                        gr.Markdown("### Phân tích AI chi tiết theo mô hình OSI")
+                        ai_analysis_detail = gr.Markdown("Tải lên file PCAP trong tab 'Phân tích PCAP' để xem phân tích chi tiết theo mô hình OSI...")
                         refresh_detail_btn = gr.Button("Làm mới phân tích", variant="secondary")
                     
                 with gr.Row():
                     with gr.Column():
-                        tcp_flags_chart = gr.Plot(label="Phân bố cờ TCP")
+                        tcp_flags_chart = gr.Plot(label="Phân tích tầng Giao vận (Transport)")
                     with gr.Column():
-                        tcp_attack_chart = gr.Plot(label="Phân tích các cuộc tấn công TCP")
+                        tcp_attack_chart = gr.Plot(label="Phân tích tầng Mạng (Network)")
             
             # Tab giám sát thời gian thực
             with gr.Tab("Giám sát thời gian thực"):

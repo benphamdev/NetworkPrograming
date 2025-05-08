@@ -44,6 +44,12 @@ class PacketRepository(ABC):
     
     @abstractmethod
     @log_function_call
+    def get_all_packets(self) -> List[Packet]:
+        """Get all packets without timeframe constraint."""
+        pass
+    
+    @abstractmethod
+    @log_function_call
     def query_packets(self, query: Dict[str, Any]) -> List[Packet]:
         """Query packets based on various criteria."""
         pass

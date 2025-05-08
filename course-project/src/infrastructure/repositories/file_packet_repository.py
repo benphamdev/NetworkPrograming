@@ -109,6 +109,16 @@ class FilePacketRepository(PacketRepository):
         """
         return [p for p in self.packets if start_time <= p.timestamp <= end_time]
     
+    def get_all_packets(self) -> List[Packet]:
+        """
+        Get all packets without timeframe constraint.
+        
+        Returns:
+            List of all Packet entities
+        """
+        print(f"DEBUG: Lấy tất cả gói tin, tổng số: {len(self.packets)}")
+        return self.packets
+    
     def query_packets(self, query: Dict[str, Any]) -> List[Packet]:
         """
         Query packets based on various criteria.

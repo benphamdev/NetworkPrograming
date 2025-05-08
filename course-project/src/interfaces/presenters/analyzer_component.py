@@ -5,6 +5,7 @@ from typing import Dict, Tuple, List
 import os
 from src.interfaces.presenters.base_presenter import BasePresenter
 from src.interfaces.presenters.chart_creator import ChartCreator
+from src.interfaces.gateways.smolagent_gateway import SmolagentGateway
 import pandas as pd
 
 class AnalyzerComponent:
@@ -20,100 +21,34 @@ class AnalyzerComponent:
         self.base_presenter = base_presenter
         self.chart_creator = ChartCreator()
         self.chat_history = []
+        self.smolagent_gateway = SmolagentGateway()
 
-    def create_tcp_analysis(self, results: Dict) -> str:
-        """Tạo phân tích AI cho lưu lượng TCP và các cuộc tấn công."""
+    def create_osi_analysis(self, results: Dict) -> str:
+        """
+        Tạo phân tích AI cho lưu lượng mạng theo mô hình OSI sử dụng SmolagentGateway.
+        
+        Args:
+            results: Kết quả phân tích từ file PCAP
+            
+        Returns:
+            Phân tích chi tiết theo mô hình OSI
+        """
         if not results:
             return "Không có dữ liệu để phân tích. Vui lòng tải lên file PCAP trước."
 
-        analysis = "## Phân tích AI về luồng TCP và các tấn công\n\n"
-
-        # Phân tích kết nối TCP
-        tcp_stats = {}
-        if "flow_statistics" in results:
-            tcp_stats = results["flow_statistics"]
-            total_flows = tcp_stats.get("total_flows", 0)
-            established = tcp_stats.get("established_count", 0)
-            reset = tcp_stats.get("reset_count", 0)
-
-            # Tính tỉ lệ phần trăm (thêm kiểm tra để tránh chia cho 0)
-            est_percent = (established / total_flows * 100) if total_flows > 0 else 0
-            reset_percent = (reset / total_flows * 100) if total_flows > 0 else 0
-
-            analysis += f"### Phân tích kết nối TCP\n\n"
-            analysis += f"- Đã phân tích {total_flows} luồng TCP tổng cộng\n"
-            analysis += f"- Tỉ lệ kết nối đã thiết lập: {est_percent:.2f}%\n"
-            analysis += f"- Tỉ lệ kết nối bị đặt lại: {reset_percent:.2f}%\n\n"
-
-            # Thêm nhận định dựa trên tỉ lệ
-            if reset_percent > 30:
-                analysis += "⚠️ **Cảnh báo**: Tỉ lệ kết nối bị đặt lại cao bất thường. "
-                analysis += "Điều này có thể chỉ ra rằng đang có cuộc tấn công RST flood hoặc quét cổng.\n\n"
-
-            if est_percent < 40:
-                analysis += "⚠️ **Chú ý**: Tỉ lệ kết nối được thiết lập thấp. "
-                analysis += "Điều này có thể chỉ ra các vấn đề về cấu hình mạng hoặc tấn công từ chối dịch vụ.\n\n"
-
-        # Phân tích tấn công
-        attacks = results.get("attacks", [])
-        if attacks:
-            tcp_attacks = [a for a in attacks if "TCP" in a.get("attack_type", "") or "SYN" in a.get("attack_type", "")]
-
-            analysis += f"### Phân tích các tấn công TCP\n\n"
-            if tcp_attacks:
-                analysis += f"Phát hiện {len(tcp_attacks)} cuộc tấn công liên quan đến TCP:\n\n"
-
-                # Nhóm tấn công theo loại
-                attack_types = {}
-                for attack in tcp_attacks:
-                    attack_type = attack.get("attack_type", "Unknown")
-                    if attack_type not in attack_types:
-                        attack_types[attack_type] = 0
-                    attack_types[attack_type] += 1
-
-                for attack_type, count in attack_types.items():
-                    analysis += f"- **{attack_type}**: {count} trường hợp\n"
-
-                # Thêm phân tích chi tiết cho các tấn công TCP phổ biến
-                if any("SYN Flood" in a.get("attack_type", "") for a in tcp_attacks):
-                    analysis += "\n**Phân tích SYN Flood**:\n"
-                    analysis += "Tấn công SYN Flood nhằm làm cạn kiệt tài nguyên máy chủ bằng cách gửi nhiều gói SYN "
-                    analysis += "mà không hoàn tất quá trình bắt tay 3 bước TCP. Hệ thống nên:\n"
-                    analysis += "- Áp dụng SYN cookies hoặc SYN cache\n"
-                    analysis += "- Giảm thời gian chờ kết nối TCP\n"
-                    analysis += "- Sử dụng tường lửa hoặc IPS để lọc lưu lượng đáng ngờ\n"
-
-                if any("RST" in a.get("attack_type", "") for a in tcp_attacks):
-                    analysis += "\n**Phân tích RST Attack**:\n"
-                    analysis += "Tấn công RST nhằm ngắt kết nối TCP hợp pháp bằng cách giả mạo gói RST. Hệ thống nên:\n"
-                    analysis += "- Triển khai xác thực gói tin\n"
-                    analysis += "- Sử dụng mã hóa cho giao tiếp quan trọng\n"
-                    analysis += "- Giám sát lưu lượng RST bất thường\n"
+        try:
+            # Gọi smolagent_gateway để phân tích
+            osi_analysis = self.smolagent_gateway.analyze_osi_layers(results)
+            
+            # Kiểm tra kết quả và trả về phân tích
+            if isinstance(osi_analysis, dict) and "analysis" in osi_analysis:
+                return osi_analysis["analysis"]
+            elif isinstance(osi_analysis, str):
+                return osi_analysis
             else:
-                analysis += "Không phát hiện tấn công TCP cụ thể trong dữ liệu đã phân tích.\n"
-        else:
-            analysis += "### Phân tích các tấn công TCP\n\n"
-            analysis += "Không phát hiện tấn công trong dữ liệu đã phân tích.\n"
-
-        # Phân tích hiệu suất TCP
-        analysis += "\n### Phân tích hiệu suất TCP\n\n"
-
-        # Tạo các số liệu hiệu suất mẫu
-        retransmission_rate = 5.2
-        avg_rtt = 120
-
-        analysis += f"- Tỉ lệ truyền lại gói tin: {retransmission_rate:.1f}%\n"
-        analysis += f"- Thời gian vòng (RTT) trung bình: {avg_rtt} ms\n"
-
-        if retransmission_rate > 10:
-            analysis += "\n⚠️ **Cảnh báo**: Tỉ lệ truyền lại gói tin cao có thể cho thấy "
-            analysis += "sự tắc nghẽn mạng, mất gói tin, hoặc các vấn đề về cấu hình TCP.\n"
-
-        if avg_rtt > 200:
-            analysis += "\n⚠️ **Cảnh báo**: Thời gian vòng TCP cao có thể ảnh hưởng tiêu cực "
-            analysis += "đến hiệu suất ứng dụng và trải nghiệm người dùng.\n"
-
-        return analysis
+                return "## Phân tích theo mô hình OSI\n\n" + str(osi_analysis)
+        except Exception as e:
+            return f"## Lỗi khi phân tích theo mô hình OSI\n\nĐã xảy ra lỗi khi phân tích: {str(e)}"
 
     def create_ai_chat_response(self, query: str, results: Dict) -> str:
         """
@@ -287,10 +222,10 @@ class AnalyzerComponent:
             return response
 
         elif "tcp" in query_lower or "kết nối" in query_lower:
-            tcp_analysis = self.create_tcp_analysis(results)
+            tcp_analysis = self.create_osi_analysis(results)
             # Thêm thông tin về file đang được phân tích
             file_name = os.path.basename(self.base_presenter.latest_pcap_file) if self.base_presenter.latest_pcap_file else "đã tải lên"
-            return f"Phân tích kết nối TCP từ file {file_name}:\n\n{tcp_analysis}"
+            return f"Phân tích lưu lượng mạng theo mô hình OSI từ file {file_name}:\n\n{tcp_analysis}"
 
         elif "giao thức" in query_lower or "protocol" in query_lower:
             if "protocol_statistics" in results:
@@ -306,6 +241,12 @@ class AnalyzerComponent:
                 response += "\nGiao thức chính được sử dụng là " + top_protocols[0][0]
                 return response
             return "Không có thông tin về phân bố giao thức trong dữ liệu."
+
+        elif "osi" in query_lower or "mô hình osi" in query_lower:
+            # Trả về phân tích mô hình OSI khi được yêu cầu cụ thể
+            osi_analysis = self.create_osi_analysis(results)
+            file_name = os.path.basename(self.base_presenter.latest_pcap_file) if self.base_presenter.latest_pcap_file else "đã tải lên"
+            return f"Phân tích lưu lượng mạng theo mô hình OSI từ file {file_name}:\n\n{osi_analysis}"
 
         elif "giảm thiểu" in query_lower or "mitigate" in query_lower or "phòng chống" in query_lower:
             attacks = results.get("attacks", [])
@@ -345,12 +286,17 @@ class AnalyzerComponent:
             return response
 
         # Trường hợp mặc định nếu không có từ khóa phù hợp
-        file_name = os.path.basename(self.base_presenter.latest_pcap_file) if self.base_presenter.latest_pcap_file else "đã tải lên"
-        return (
-            f"Tôi có thể cung cấp phân tích chi tiết về file PCAP {file_name}. "
-            "Hãy hỏi tôi về: tấn công phát hiện được, phân tích TCP, phân bố giao thức, "
-            "rủi ro mạng, hoặc biện pháp giảm thiểu tấn công."
-        )
+        try:
+            # Gọi trực tiếp đến deepseek model thông qua phương thức direct_query
+            return self.smolagent_gateway.direct_query(query)
+        except Exception as e:
+            # Nếu có lỗi, sử dụng phản hồi mặc định
+            file_name = os.path.basename(self.base_presenter.latest_pcap_file) if self.base_presenter.latest_pcap_file else "đã tải lên"
+            return (
+                f"Tôi có thể cung cấp phân tích chi tiết về file PCAP {file_name}. "
+                "Hãy hỏi tôi về: tấn công phát hiện được, phân tích mạng theo mô hình OSI, phân bố giao thức, "
+                "rủi ro mạng, hoặc biện pháp giảm thiểu tấn công."
+            )
 
     def _create_file_summary(self, results: Dict, file_name: str) -> str:
         """
@@ -566,7 +512,7 @@ class AnalyzerComponent:
             flow_graph = self.chart_creator.create_flow_graph(results)
 
             # Tạo AI analysis cho tab chi tiết
-            tcp_analysis = self.create_tcp_analysis(results)
+            tcp_analysis = self.create_osi_analysis(results)
 
             # Tạo trực quan hóa cụ thể cho TCP
             tcp_visualizations = self.chart_creator.create_tcp_visualizations(results)
