@@ -8,7 +8,6 @@ import networkx as nx
 
 # Import smolagents và các thành phần liên quan
 from smolagents import (
-    CodeAgent,
     ToolCallingAgent,
     DuckDuckGoSearchTool,
     VisitWebpageTool,
@@ -58,10 +57,11 @@ search_agent = ToolCallingAgent(
 )
 
 # Khởi tạo manager_agent để quản lý và phân tích
-manager_agent = CodeAgent(
+manager_agent = ToolCallingAgent(
     tools=[],
     model=model,
-    managed_agents=[search_agent],
+    name="analyst_agent",
+    description="This is an agent that analyzes network traffic patterns.",
 )
 
 # Hàm chạy lệnh tcpdump và ghi lại lưu lượng

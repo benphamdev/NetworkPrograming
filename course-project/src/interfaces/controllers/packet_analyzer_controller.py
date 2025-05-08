@@ -16,12 +16,14 @@ class PacketAnalyzerController:
         self,
         analyze_packet_use_case: AnalyzePacketUseCase,
         detect_attack_use_case: DetectAttackUseCase,
-        visualize_flow_use_case: VisualizeFlowUseCase
+        visualize_flow_use_case: VisualizeFlowUseCase,
+        smolagent_gateway = None
     ):
         """Initialize with required use cases."""
         self.analyze_packet_use_case = analyze_packet_use_case
         self.detect_attack_use_case = detect_attack_use_case
         self.visualize_flow_use_case = visualize_flow_use_case
+        self.smolagent_gateway = smolagent_gateway
     
     def analyze_pcap_file(self, file_path: str) -> Dict[str, Any]:
         """Analyze a pcap file and return analysis results."""

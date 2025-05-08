@@ -57,7 +57,7 @@ def setup_dependencies():
     
     # Create controller
     controller = PacketAnalyzerController(
-        analyze_packet_use_case, detect_attack_use_case, visualize_flow_use_case)
+        analyze_packet_use_case, detect_attack_use_case, visualize_flow_use_case, smolagent_gateway)
     
     return {
         "packet_repository": packet_repository,

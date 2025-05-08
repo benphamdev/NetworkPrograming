@@ -24,7 +24,7 @@ class PCAPAnalyzer:
     
     def analyze_pcap(self, pcap_file) -> Tuple:
         """
-        Phân tích file PCAP và định dạng kết quả cho UI.
+        Phân tích file pcap và định dạng kết quả cho UI.
         
         Args:
             pcap_file: File PCAP để phân tích
@@ -82,6 +82,61 @@ class PCAPAnalyzer:
                 empty_chart,
                 error_chat
             )
+    
+    def analyze_pcap_raw_packets(self, pcap_file, custom_prompt: str = None) -> str:
+        """
+        Phân tích file pcap sử dụng phương pháp phân tích gói tin thô.
+        
+        Args:
+            pcap_file: File PCAP để phân tích
+            custom_prompt: Prompt tùy chỉnh để hướng dẫn AI phân tích
+            
+        Returns:
+            Kết quả phân tích dưới dạng chuỗi văn bản
+        """
+        if not pcap_file:
+            return "Không tìm thấy file PCAP."
+
+        # Lưu thông tin về file hiện tại
+        file_path = pcap_file.name if hasattr(pcap_file, 'name') else pcap_file
+        self.latest_pcap_file = file_path
+
+        try:
+            # Tải các gói tin mà không thực hiện phân tích
+            packets = self.controller.analyze_packet_use_case.packet_repository.load_pcap_file(file_path)
+            
+            # Sử dụng phương thức phân tích gói tin thô từ SmolAgent
+            if "osi" in custom_prompt.lower() if custom_prompt else False:
+                # Nếu prompt có chứa "osi", sử dụng phân tích theo mô hình OSI
+                from src.interfaces.gateways.osi_analyzer import OSILayerAnalyzer
+                # Truy cập smolagent_gateway từ controller thay vì từ analyze_packet_use_case
+                smolagent_gateway = self.controller.smolagent_gateway
+                if hasattr(smolagent_gateway, 'manager_agent'):
+                    manager_agent = smolagent_gateway.manager_agent
+                    osi_analyzer = OSILayerAnalyzer(manager_agent)
+                    result = osi_analyzer.analyze_raw_packets(packets, custom_prompt)
+                else:
+                    # Nếu không có manager_agent, sử dụng phương thức trực tiếp
+                    result = smolagent_gateway.analyze_osi_raw_packets(packets, custom_prompt)
+                
+                if isinstance(result, dict) and "analysis" in result:
+                    return result["analysis"]
+                return str(result)
+            else:
+                # Sử dụng phân tích gói tin thông thường
+                # Truy cập smolagent_gateway từ controller thay vì từ analyze_packet_use_case
+                smolagent_gateway = self.controller.smolagent_gateway
+                result = smolagent_gateway.analyze_raw_packets(packets, custom_prompt)
+                if isinstance(result, dict) and "analysis" in result:
+                    return result["analysis"]
+                return str(result)
+
+        except Exception as e:
+            # Xử lý lỗi
+            error_message = f"## Lỗi khi phân tích file\n\n"
+            error_message += f"Không thể phân tích file: {str(e)}\n\n"
+            error_message += "Vui lòng kiểm tra lại file PCAP và thử lại."
+            return error_message
     
     def _create_summary(self, file_path: str, results: Dict) -> str:
         """

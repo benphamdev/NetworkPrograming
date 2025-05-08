@@ -29,7 +29,7 @@ Công cụ phân tích gói tin mạng để phát hiện các cuộc tấn côn
 
 ### Cài đặt thông qua pip
 
-        ```bash
+```bash
 # Clone repository
 git clone https://github.com/username/network-packet-analyzer.git
 cd network-packet-analyzer
@@ -55,7 +55,7 @@ DEEPSEEK_API_KEY=your-api-key-here
 
 Chạy giao diện web tương tác:
 
-        ```bash
+```bash
 python web_interface.py
 ```
 
@@ -71,73 +71,101 @@ Giao diện web bao gồm các tab:
 
 #### Phân tích file pcap
 
-        ```bash
+```bash
 python main.py analyze path/to/your/file.pcap
 ```
 
 #### Liệt kê các file pcap có sẵn
 
-        ```bash
+```bash
 python main.py list
-        ```
+```
 
 #### Giám sát lưu lượng trong thời gian thực
 
-        ```bash
+```bash
 python main.py monitor --duration 10
 ```
 
 #### Xem thống kê luồng
 
-            ```bash
+```bash
 python main.py stats --hours 1
-            ```
+```
 
 #### Xem các cuộc tấn công đã phát hiện
 
-            ```bash
+```bash
 python main.py attacks --hours 24
 ```
 
-## Cấu trúc dự án
+## Kiến trúc Clean Architecture
 
-Dự án tuân theo kiến trúc Clean Architecture:
+Dự án đã được thiết kế theo nguyên tắc Clean Architecture và OOP để cải thiện tính module, khả năng bảo trì, và khả năng kiểm thử. Kiến trúc hiện tại tuân theo các nguyên tắc:
+
+1. **Single Responsibility Principle (SRP)**: Mỗi lớp chỉ có một lý do để thay đổi
+2. **Open/Closed Principle**: Mở rộng, không sửa đổi
+3. **Phân tách các tầng**: Domain, Use Cases, Interfaces, Infrastructure
+
+## Cấu trúc dự án
 
 ```
 src/
-  ├── domain/                 # Core business entities
-  │   ├── entities/           # Core domain entities
-  │   │   ├── packet.py       # Basic packet entity
-  │   │   ├── attack.py       # Attack entity
-  │   │   └── flow.py         # Network flow entity
-  │   └── repositories/       # Repository interfaces
-  │       ├── packet_repository.py
-  │       └── attack_repository.py
-  ├── use_cases/              # Application business logic
-  │   ├── analyze_packet_use_case.py
-  │   ├── detect_attack_use_case.py
-  │   └── visualize_flow_use_case.py
-  ├── interfaces/             # Interface adapters
-  │   ├── controllers/
-  │   │   └── packet_analyzer_controller.py
-  │   ├── gateways/
-  │   │   ├── scapy_packet_gateway.py
-  │   │   └── smolagent_gateway.py
-  │   └── presenters/
-  │       ├── cli_presenter.py 
-  │       ├── visualization_presenter.py
-  │       └── gradio_presenter.py
-  └── infrastructure/         # External frameworks & tools
-      ├── repositories/
-      │   ├── file_packet_repository.py
-      │   └── memory_attack_repository.py
-      ├── smolagent/
-      │   └── deep_seek_agent.py
-      └── visualizers/
-          └── matplotlib_visualizer.py
-main.py                      # CLI entry point
-web_interface.py            # Web interface entry point
+  ├── domain/              # Các thực thể và quy tắc nghiệp vụ cốt lõi
+  │   ├── entities/        # Các lớp thực thể cơ bản
+  │   └── repositories/    # Interface cho các repository
+  ├── use_cases/           # Logic nghiệp vụ của ứng dụng
+  ├── interfaces/          # Adapter cho tương tác với người dùng và hệ thống bên ngoài
+  │   ├── controllers/     # Controller xử lý input
+  │   ├── gateways/        # Các lớp tương tác với dịch vụ bên ngoài
+  │   └── presenters/      # Các lớp xử lý hiển thị kết quả
+  └── infrastructure/      # Triển khai cụ thể cho các interface
+      └── repositories/    # Triển khai các repository
+  └── utils/               # Tiện ích chung
 ```
+
+## Các lớp chính và trách nhiệm
+
+### Domain Layer
+
+Tập trung vào các thực thể và quy tắc nghiệp vụ cốt lõi. Lớp này không phụ thuộc vào bất kỳ lớp khác.
+
+### Use Cases Layer
+
+Chứa logic nghiệp vụ cụ thể, triển khai các trường hợp sử dụng của ứng dụng.
+
+### Interfaces Layer
+
+#### Presenters:
+- **BasePresenter**: Lớp cơ sở cho các presenter với chức năng chung
+- **AnalyzerComponent**: Xử lý việc phân tích PCAP và điều phối các lớp phân tích con
+- **ChatHandler**: Quản lý hội thoại chat với người dùng về phân tích mạng
+- **PCAPAnalyzer**: Phân tích file PCAP và định dạng kết quả cho UI
+- **SummaryCreator**: Tạo các tóm tắt phân tích từ dữ liệu PCAP
+- **ChartCreator**: Tạo các biểu đồ và trực quan hóa
+- **GradioPresenter**: Giao diện web sử dụng Gradio
+- **CLIPresenter**: Giao diện dòng lệnh
+
+#### Gateways:
+- **SmolagentGateway**: Tương tác với multiagent AI framework
+- **OSILayerAnalyzer**: Phân tích lưu lượng mạng theo mô hình OSI
+- **ResponseExtractor**: Trích xuất thông tin có cấu trúc từ phản hồi AI
+- **ScapyPacketGateway**: Tương tác với thư viện Scapy để phân tích gói tin
+
+#### Controllers:
+- **PacketAnalyzerController**: Điều phối phân tích gói tin và tấn công
+
+### Infrastructure Layer
+
+Các triển khai cụ thể cho interfaces như repository, database, external service connectors.
+
+## Cải tiến kiến trúc
+
+1. **Giới hạn kích thước code**: Mỗi file giữ trong khoảng 200-300 dòng code
+2. **Phân cấp rõ ràng**: Các lớp có trách nhiệm rõ ràng và tập trung
+3. **Dependency Injection**: Các lớp nhận các phụ thuộc thông qua constructor
+4. **Phân tách trách nhiệm**: Mỗi lớp có một trách nhiệm duy nhất
+5. **Tính module hóa cao**: Các lớp có thể được thay thế hoặc điều chỉnh độc lập
 
 ## Các cảnh báo tấn công
 

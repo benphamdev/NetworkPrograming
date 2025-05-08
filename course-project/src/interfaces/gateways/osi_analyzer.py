@@ -1,7 +1,8 @@
 """
 OSILayerAnalyzer - Specialized analyzer for OSI model layers in network traffic.
+It children the base class Analyzer and implements the analyze method to provide
 """
-from typing import Dict, Any
+from typing import Dict, Any, List
 import json
 
 class OSILayerAnalyzer:
@@ -53,11 +54,11 @@ class OSILayerAnalyzer:
             Prompt string.
         """
         prompt = """
-Là một chuyên gia điều tra số trong lĩnh vực mạng (Network Forensics Expert), hãy phân tích chi tiết lưu lượng mạng dưới đây theo mô hình OSI (7 tầng). 
-Phân tích sâu về các dấu hiệu bất thường và các vấn đề bảo mật tiềm ẩn ở mỗi tầng.
-
-Dưới đây là dữ liệu lưu lượng mạng cần phân tích:
-"""
+                Là một chuyên gia điều tra số trong lĩnh vực mạng (Network Forensics Expert), hãy phân tích chi tiết lưu lượng mạng dưới đây theo mô hình OSI (7 tầng). 
+                Phân tích sâu về các dấu hiệu bất thường và các vấn đề bảo mật tiềm ẩn ở mỗi tầng.
+                
+                Dưới đây là dữ liệu lưu lượng mạng cần phân tích:
+                """
         
         # Thêm thống kê giao thức nếu có
         if "protocol_statistics" in results:
@@ -89,42 +90,168 @@ Dưới đây là dữ liệu lưu lượng mạng cần phân tích:
         
         # Thêm hướng dẫn phân tích theo mô hình OSI
         prompt += """
-\nHãy phân tích dữ liệu trên theo 7 tầng của mô hình OSI như sau:
-
-1. Tầng Vật lý (Physical Layer):
-   - Phân tích các vấn đề liên quan đến phương tiện truyền dẫn, tín hiệu.
-
-2. Tầng Liên kết dữ liệu (Data Link Layer):
-   - Phân tích frame, ARP, MAC, các vấn đề về chuyển mạch.
-   - Xác định dấu hiệu tấn công như ARP spoofing, MAC flooding.
-
-3. Tầng Mạng (Network Layer):
-   - Phân tích gói tin IP, định tuyến, phân mảnh.
-   - Xác định dấu hiệu tấn công như IP spoofing, ICMP flood.
-
-4. Tầng Giao vận (Transport Layer):
-   - Phân tích kết nối TCP/UDP, port.
-   - Xác định dấu hiệu tấn công như SYN flood, port scanning.
-
-5. Tầng Phiên (Session Layer):
-   - Phân tích phiên làm việc, các giao thức phiên.
-   - Xác định dấu hiệu tấn công như session hijacking.
-
-6. Tầng Trình diễn (Presentation Layer):
-   - Phân tích mã hóa, nén, chuẩn hóa dữ liệu.
-   - Xác định dấu hiệu tấn công như SSL exploitation.
-
-7. Tầng Ứng dụng (Application Layer):
-   - Phân tích giao thức ứng dụng (HTTP, DNS, FTP...).
-   - Xác định dấu hiệu tấn công như DDoS, injection attacks.
-
-Cho mỗi tầng, hãy:
-1. Mô tả chi tiết các phát hiện chính
-2. Xác định các dấu hiệu bất thường và mức độ nghiêm trọng (thấp/trung bình/cao)
-3. Cung cấp các khuyến nghị bảo mật cụ thể
-4. Liên kết các phát hiện với các kỹ thuật tấn công đã biết (nếu có)
-
-Định dạng phân tích theo Markdown, với các đề mục rõ ràng và phân cấp phù hợp. Tập trung vào phân tích chuyên sâu nhưng ngắn gọn.
-"""
+                \nHãy phân tích dữ liệu trên theo 7 tầng của mô hình OSI như sau:
+                
+                1. Tầng Vật lý (Physical Layer):
+                   - Phân tích các vấn đề liên quan đến phương tiện truyền dẫn, tín hiệu.
+                
+                2. Tầng Liên kết dữ liệu (Data Link Layer):
+                   - Phân tích frame, ARP, MAC, các vấn đề về chuyển mạch.
+                   - Xác định dấu hiệu tấn công như ARP spoofing, MAC flooding.
+                
+                3. Tầng Mạng (Network Layer):
+                   - Phân tích gói tin IP, định tuyến, phân mảnh.
+                   - Xác định dấu hiệu tấn công như IP spoofing, ICMP flood.
+                
+                4. Tầng Giao vận (Transport Layer):
+                   - Phân tích kết nối TCP/UDP, port.
+                   - Xác định dấu hiệu tấn công như SYN flood, port scanning.
+                
+                5. Tầng Phiên (Session Layer):
+                   - Phân tích phiên làm việc, các giao thức phiên.
+                   - Xác định dấu hiệu tấn công như session hijacking.
+                
+                6. Tầng Trình diễn (Presentation Layer):
+                   - Phân tích mã hóa, nén, chuẩn hóa dữ liệu.
+                   - Xác định dấu hiệu tấn công như SSL exploitation.
+                
+                7. Tầng Ứng dụng (Application Layer):
+                   - Phân tích giao thức ứng dụng (HTTP, DNS, FTP...).
+                   - Xác định dấu hiệu tấn công như DDoS, injection attacks.
+                
+                Cho mỗi tầng, hãy:
+                1. Mô tả chi tiết các phát hiện chính
+                2. Xác định các dấu hiệu bất thường và mức độ nghiêm trọng (thấp/trung bình/cao)
+                3. Cung cấp các khuyến nghị bảo mật cụ thể
+                4. Liên kết các phát hiện với các kỹ thuật tấn công đã biết (nếu có)
+                
+                Định dạng phân tích theo Markdown, với các đề mục rõ ràng và phân cấp phù hợp. Tập trung vào phân tích chuyên sâu.
+                """
+        
+        return prompt 
+        
+    def analyze_raw_packets(self, packets: List, custom_prompt: str = None) -> Dict[str, Any]:
+        """
+        Phân tích danh sách gói tin thô theo mô hình OSI.
+        
+        Args:
+            packets: Danh sách các gói tin cần phân tích
+            custom_prompt: Prompt tùy chỉnh để hướng dẫn AI phân tích. Nếu None, sẽ sử dụng prompt mặc định
+            
+        Returns:
+            Kết quả phân tích theo mô hình OSI
+        """
+        # Tạo prompt từ thông tin gói tin
+        prompt = self._build_raw_packet_osi_prompt(packets, custom_prompt)
+        
+        # Truy vấn agent
+        response = self.manager_agent.run(prompt)
+        
+        # Xử lý phản hồi
+        try:
+            # Cố gắng phân tích JSON nếu có thể
+            analyzed_results = json.loads(response)
+        except (json.JSONDecodeError, TypeError):
+            # Nếu không, sử dụng phản hồi gốc
+            analyzed_results = {"analysis": response}
+        
+        return analyzed_results
+    
+    def _build_raw_packet_osi_prompt(self, packets: List, custom_prompt: str = None) -> str:
+        """
+        Xây dựng prompt để phân tích các gói tin thô theo mô hình OSI.
+        
+        Args:
+            packets: Danh sách các gói tin thô
+            custom_prompt: Prompt tùy chỉnh (nếu có)
+            
+        Returns:
+            Prompt string
+        """
+        if custom_prompt:
+            base_prompt = custom_prompt
+        else:
+            base_prompt = """
+            Là một chuyên gia điều tra số trong lĩnh vực mạng (Network Forensics Expert), hãy phân tích chi tiết lưu lượng mạng dưới đây theo mô hình OSI (7 tầng).
+            Phân tích sâu về các dấu hiệu bất thường và các vấn đề bảo mật tiềm ẩn ở mỗi tầng.
+            
+            Dưới đây là dữ liệu lưu lượng mạng cần phân tích:
+            """
+        
+        prompt = base_prompt + "\n\n"
+        
+        # Thêm thông tin tổng quan
+        prompt += f"## Tổng quan\n"
+        prompt += f"- Tổng số gói tin: {len(packets)}\n"
+        
+        # Thống kê giao thức
+        protocols = {}
+        for packet in packets:
+            proto = getattr(packet, 'protocol', 'Unknown')
+            protocols[proto] = protocols.get(proto, 0) + 1
+        
+        prompt += "\n## Thống kê giao thức\n"
+        for proto, count in protocols.items():
+            prompt += f"- {proto}: {count} gói tin\n"
+        
+        # Thêm thông tin chi tiết về một số gói tin (giới hạn để tránh prompt quá dài)
+        prompt += "\n## Chi tiết gói tin (mẫu)\n"
+        for i, packet in enumerate(packets[:10]):  # Chỉ lấy 10 gói tin đầu tiên làm mẫu
+            prompt += f"\n### Gói tin #{i+1}\n"
+            for attr in dir(packet):
+                if not attr.startswith('_') and not callable(getattr(packet, attr)):
+                    value = getattr(packet, attr)
+                    if not isinstance(value, (list, dict)) or (isinstance(value, list) and len(value) < 10):
+                        prompt += f"- {attr}: {value}\n"
+        
+        if len(packets) > 10:
+            prompt += f"\n*... và {len(packets) - 10} gói tin khác ...*\n"
+        
+        # Thêm hướng dẫn phân tích theo mô hình OSI
+        prompt += """
+                \nHãy phân tích dữ liệu trên theo 7 tầng của mô hình OSI như sau:
+                
+                1. Tầng Vật lý (Physical Layer):
+                   - Phân tích các vấn đề liên quan đến phương tiện truyền dẫn, tín hiệu.
+                
+                2. Tầng Liên kết dữ liệu (Data Link Layer):
+                   - Phân tích frame, ARP, MAC, các vấn đề về chuyển mạch.
+                   - Xác định dấu hiệu tấn công như ARP spoofing, MAC flooding.
+                
+                3. Tầng Mạng (Network Layer):
+                   - Phân tích gói tin IP, định tuyến, phân mảnh.
+                   - Xác định dấu hiệu tấn công như IP spoofing, ICMP flood.
+                
+                4. Tầng Giao vận (Transport Layer):
+                   - Phân tích kết nối TCP/UDP, port.
+                   - Xác định dấu hiệu tấn công như SYN flood, port scanning.
+                
+                5. Tầng Phiên (Session Layer):
+                   - Phân tích phiên làm việc, các giao thức phiên.
+                   - Xác định dấu hiệu tấn công như session hijacking.
+                
+                6. Tầng Trình diễn (Presentation Layer):
+                   - Phân tích mã hóa, nén, chuẩn hóa dữ liệu.
+                   - Xác định dấu hiệu tấn công như SSL exploitation.
+                
+                7. Tầng Ứng dụng (Application Layer):
+                   - Phân tích giao thức ứng dụng (HTTP, DNS, FTP...).
+                   - Xác định dấu hiệu tấn công như DDoS, injection attacks.
+                
+                Cho mỗi tầng, hãy:
+                1. Mô tả chi tiết các phát hiện chính
+                2. Xác định các dấu hiệu bất thường và mức độ nghiêm trọng (thấp/trung bình/cao)
+                3. Cung cấp các khuyến nghị bảo mật cụ thể
+                4. Liên kết các phát hiện với các kỹ thuật tấn công đã biết (nếu có)
+                5. Đề xuất các use case phân tích mới để phát hiện tấn công ở tầng này
+                
+                Sau khi phân tích xong các tầng, hãy đưa ra kết luận và đề xuất tổng thể về:
+                1. Các vấn đề bảo mật chính được phát hiện
+                2. Mức độ nghiêm trọng tổng thể của các vấn đề
+                3. Các biện pháp bảo mật cần ưu tiên
+                4. Các use case phân tích mới nên được thêm vào hệ thống phát hiện tấn công
+                
+                Định dạng phân tích theo Markdown, với các đề mục rõ ràng và phân cấp phù hợp. Tập trung vào phân tích chuyên sâu.
+                """
         
         return prompt 

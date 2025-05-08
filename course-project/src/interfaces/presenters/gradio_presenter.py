@@ -1,5 +1,6 @@
 """
 Gradio Presenter - Web-based interface for packet analysis using Gradio.
+It includes components for analyzing PCAP files, visualizing results, and providing real-time monitoring.
 """
 import gradio as gr
 from typing import Tuple
@@ -80,10 +81,23 @@ class GradioPresenter:
     
     def get_detailed_tcp_analysis(self) -> str:
         """Lấy phân tích chi tiết theo mô hình OSI cho tab chi tiết AI."""
-        if not self.base_presenter.latest_results:
+        if not self.base_presenter.latest_pcap_file:
             return "Chưa có dữ liệu phân tích. Vui lòng tải lên file PCAP trước."
         
-        return self.analyzer.create_osi_analysis(self.base_presenter.latest_results)
+        try:
+            pcap_file = self.base_presenter.latest_pcap_file
+            
+            # Tạo prompt tùy chỉnh cho phân tích OSI
+            custom_prompt = """
+            Là một chuyên gia điều tra số trong lĩnh vực mạng (Network Forensics Expert), hãy phân tích chi tiết lưu lượng mạng dưới đây theo mô hình OSI (7 tầng).
+            Tập trung phân tích sâu về các dấu hiệu bất thường và các vấn đề bảo mật tiềm ẩn ở mỗi tầng.
+            Đề xuất các use case phân tích mới để phát hiện tấn công hoặc vấn đề mạng ngoài những gì hệ thống hiện tại đã phát hiện.
+            """
+            
+            # Sử dụng pcap_analyzer.analyze_pcap_raw_packets trực tiếp với file và prompt tùy chỉnh
+            return self.analyzer.pcap_analyzer.analyze_pcap_raw_packets(pcap_file, custom_prompt)
+        except Exception as e:
+            return f"Lỗi khi phân tích gói tin: {str(e)}\n\nVui lòng tải lại file PCAP và thử lại."
     
     def start_monitoring(self, duration_minutes: int) -> str:
         """Bắt đầu giám sát thời gian thực."""
@@ -97,6 +111,27 @@ class GradioPresenter:
         """Hiển thị thống kê luồng."""
         return self.monitoring.display_flow_stats(hours)
         
+    def analyze_raw_packets(self, pcap_file, prompt: str = None) -> str:
+        """
+        Phân tích các gói tin thô từ file PCAP với prompt tùy chỉnh.
+        
+        Args:
+            pcap_file: File PCAP để phân tích
+            prompt: Prompt tùy chỉnh để hướng dẫn AI phân tích
+            
+        Returns:
+            Phân tích chi tiết dưới dạng chuỗi văn bản markdown
+        """
+        if not pcap_file:
+            return "Vui lòng tải lên file PCAP trước khi phân tích."
+        
+        # Cập nhật thông tin file hiện tại
+        file_path = pcap_file.name if hasattr(pcap_file, 'name') else pcap_file
+        self.base_presenter.latest_pcap_file = file_path
+        
+        # Phân tích với prompt tùy chỉnh
+        return self.analyzer.pcap_analyzer.analyze_pcap_raw_packets(pcap_file, prompt)
+    
     def process_chat_query(self, query: str) -> str:
         """
         Xử lý truy vấn chat và trả về phản hồi dựa trên file PCAP đã tải lên.
@@ -150,20 +185,23 @@ class GradioPresenter:
         
         if not has_file:
             bot_response = "Vui lòng tải lên file PCAP trước khi chat. Tôi cần phân tích file để cung cấp tư vấn chính xác về rủi ro mạng."
-            chat_history.append([user_message, bot_response])
+            chat_history.append({"role": "user", "content": user_message})
+            chat_history.append({"role": "assistant", "content": bot_response})
             return "", chat_history
         
         if not has_results:
             file_name = os.path.basename(self.base_presenter.latest_pcap_file)
             bot_response = f"Tôi đã nhận file {file_name} nhưng chưa được phân tích. Vui lòng nhấn nút 'Phân tích' trong tab 'Phân tích PCAP' và quay lại đây để tư vấn."
-            chat_history.append([user_message, bot_response])
+            chat_history.append({"role": "user", "content": user_message})
+            chat_history.append({"role": "assistant", "content": bot_response})
             return "", chat_history
         
         # Tạo phản hồi từ AI dựa trên context từ file PCAP
         bot_response = self.process_chat_query(user_message)
         
-        # Thêm vào lịch sử chat ở định dạng Gradio [user_msg, bot_msg]
-        chat_history.append([user_message, bot_response])
+        # Thêm vào lịch sử chat ở định dạng Gradio messages
+        chat_history.append({"role": "user", "content": user_message})
+        chat_history.append({"role": "assistant", "content": bot_response})
         
         # Đồng thời cập nhật lịch sử chat trong analyzer để lưu trữ toàn bộ cuộc hội thoại
         self.analyzer.update_chat_history(user_message, self.base_presenter.latest_results)
@@ -186,7 +224,7 @@ class GradioPresenter:
             initial_message = self.analyzer.get_initial_chat_message(self.base_presenter.latest_results)
             self.analyzer.chat_history = [{"role": "assistant", "content": initial_message}]
             # Trả về phiên bản định dạng gradio của tin nhắn chào mừng
-            return [[None, initial_message]], ""
+            return [{"role": "assistant", "content": initial_message}], ""
         
         # Nếu không có kết quả phân tích, trả về lịch sử trống
         return [], ""
@@ -234,7 +272,8 @@ class GradioPresenter:
                             label="Tư vấn rủi ro mạng",
                             height=500,
                             render=True,
-                            elem_id="chatbox"
+                            elem_id="chatbox",
+                            type="messages"
                         )
                     
                     with gr.Column(scale=1):
@@ -324,6 +363,22 @@ class GradioPresenter:
                 with gr.Row():
                     stats_chart = gr.Plot(label="Phân bố giao thức")
             
+            # Tab phân tích tùy chỉnh với prompt cho AI
+            with gr.Tab("Phân tích tùy chỉnh"):
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        custom_pcap_file = gr.File(label="Tải lên file PCAP")
+                        custom_prompt = gr.Textbox(
+                            label="Prompt tùy chỉnh cho AI",
+                            placeholder="Nhập prompt tùy chỉnh để hướng dẫn AI phân tích...",
+                            lines=5
+                        )
+                        custom_analyze_btn = gr.Button("Phân tích tùy chỉnh", variant="primary")
+                    
+                    with gr.Column(scale=2):
+                        custom_file_info = gr.Markdown("Tải lên file PCAP để bắt đầu phân tích...")
+                        custom_analysis_result = gr.Markdown("Kết quả phân tích sẽ hiển thị ở đây...")
+            
             # Hàm cập nhật thông tin file
             def update_file_info(file):
                 if file and isinstance(file, str):
@@ -341,12 +396,15 @@ class GradioPresenter:
                 main_results = self.analyze_pcap(pcap_file)
                 
                 # Tạo dữ liệu cho tab Phân tích AI chi tiết
+                # Sử dụng phương thức phân tích trực tiếp từ gói tin thay vì kết quả đã phân tích
                 tcp_analysis = self.get_detailed_tcp_analysis()
+                
+                # Tiếp tục sử dụng các biểu đồ từ kết quả đã được phân tích
                 tcp_flags = self.chart_creator.create_tcp_flags_chart(self.base_presenter.latest_results) if self.base_presenter.latest_results else self.chart_creator._create_empty_chart("Không có dữ liệu")
                 tcp_attack = self.chart_creator.create_tcp_attack_chart(self.base_presenter.latest_results) if self.base_presenter.latest_results else self.chart_creator._create_empty_chart("Không có dữ liệu")
                 
                 # Tạo tin nhắn chat ban đầu
-                chat_msg = [[None, self.analyzer.get_initial_chat_message(self.base_presenter.latest_results)]]
+                chat_msg = [{"role": "assistant", "content": self.analyzer.get_initial_chat_message(self.base_presenter.latest_results)}]
                 
                 # Cập nhật thông tin file
                 file_info = ""
@@ -392,8 +450,8 @@ class GradioPresenter:
                     file_path = file.name if hasattr(file, 'name') else file
                     self.base_presenter.latest_pcap_file = file_path
                     # Trả về placeholder message trước khi phân tích
-                    return [[None, f"Đã nhận file {os.path.basename(file_path)}. Nhấn nút 'Phân tích' để tiến hành phân tích file."]]
-                return [[None, "Chào bạn! Tôi là trợ lý phân tích mạng. Vui lòng tải lên file PCAP để bắt đầu phân tích."]]
+                    return [{"role": "assistant", "content": f"Đã nhận file {os.path.basename(file_path)}. Nhấn nút 'Phân tích' để tiến hành phân tích file."}]
+                return [{"role": "assistant", "content": "Chào bạn! Tôi là trợ lý phân tích mạng. Vui lòng tải lên file PCAP để bắt đầu phân tích."}]
             
             pcap_file.change(
                 fn=init_chat_on_upload,
@@ -425,7 +483,11 @@ class GradioPresenter:
             # Thêm chức năng làm mới cho tab chi tiết
             refresh_detail_btn.click(
                 fn=lambda: (
+                    # Lấy phân tích chi tiết từ gói tin thô thay vì kết quả đã phân tích
                     self.get_detailed_tcp_analysis(),
+                    
+                    # Vẫn tiếp tục sử dụng các biểu đồ từ kết quả đã được phân tích
+                    # Trong tương lai có thể cập nhật để tạo biểu đồ trực tiếp từ gói tin
                     self.chart_creator.create_tcp_flags_chart(self.base_presenter.latest_results) if self.base_presenter.latest_results else self.chart_creator._create_empty_chart("Không có dữ liệu"),
                     self.chart_creator.create_tcp_attack_chart(self.base_presenter.latest_results) if self.base_presenter.latest_results else self.chart_creator._create_empty_chart("Không có dữ liệu")
                 ),
@@ -450,6 +512,19 @@ class GradioPresenter:
                 inputs=[stats_hours],
                 outputs=[stats_summary, stats_chart]
             )
-        
+            
+            # Kết nối phân tích tùy chỉnh
+            custom_analyze_btn.click(
+                fn=self.analyze_raw_packets,
+                inputs=[custom_pcap_file, custom_prompt],
+                outputs=[custom_analysis_result]
+            )
+            
+            # Cập nhật thông tin file tùy chỉnh
+            custom_pcap_file.change(
+                fn=lambda file: f"File đang phân tích: **{os.path.basename(file.name) if hasattr(file, 'name') else file}**" if file else "Tải lên file PCAP để bắt đầu phân tích...",
+                inputs=[custom_pcap_file],
+                outputs=[custom_file_info]
+            )        
         # Khởi chạy giao diện
         interface.launch(share=False)
