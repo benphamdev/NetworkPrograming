@@ -1,13 +1,13 @@
 """
 SmolagentGateway - Interface for integrating with smolagent framework for analysis.
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 import os
 import json
-import re
 
+from src.interfaces.gateways.response_extractor import ResponseExtractor
+from src.interfaces.gateways.osi_analyzer import OSILayerAnalyzer
 from smolagents import CodeAgent, ToolCallingAgent, LiteLLMModel
-# Updated import statements to match the actual package structure
 from dotenv import load_dotenv
 
 from smolagents import (
@@ -55,6 +55,10 @@ class SmolagentGateway:
             name="analyst_agent",
             description="This is an agent that analyzes network traffic patterns."
         )
+        
+        # Initialize helper classes
+        self.response_extractor = ResponseExtractor()
+        self.osi_analyzer = OSILayerAnalyzer(self.manager_agent)
     
     def _initialize_model(self) -> LiteLLMModel:
         """Initialize the LLM model."""
@@ -130,10 +134,10 @@ class SmolagentGateway:
             results = json.loads(response)
         except (json.JSONDecodeError, TypeError):
             results = {
-                "attack_detected": self._extract_attack_detection(response),
-                "attack_type": self._extract_attack_type(response),
-                "confidence": self._extract_confidence(response),
-                "recommendations": self._extract_recommendations(response),
+                "attack_detected": self.response_extractor.extract_attack_detection(response),
+                "attack_type": self.response_extractor.extract_attack_type(response),
+                "confidence": self.response_extractor.extract_confidence(response),
+                "recommendations": self.response_extractor.extract_recommendations(response),
                 "analysis": response
             }
         
@@ -231,254 +235,6 @@ class SmolagentGateway:
         
         return prompt
     
-    def _extract_attack_detection(self, response: str) -> bool:
-        """
-        Extract attack detection from text response.
-        
-        This is a simple heuristic - in a real implementation, this would be more sophisticated.
-        """
-        response_lower = response.lower()
-        
-        # Look for positive indicators
-        positive_indicators = [
-            "attack detected", "attack is detected", "attack is occurring",
-            "attack is likely", "attack is happening", "attack in progress",
-            "malicious activity", "suspicious activity"
-        ]
-        
-        # Look for negative indicators
-        negative_indicators = [
-            "no attack detected", "not an attack", "normal traffic",
-            "benign traffic", "legitimate traffic", "false positive"
-        ]
-        
-        # Check for positive indicators first
-        for indicator in positive_indicators:
-            if indicator in response_lower:
-                return True
-        
-        # Then check for negative indicators
-        for indicator in negative_indicators:
-            if indicator in response_lower:
-                return False
-        
-        # Default to False if uncertain
-        return False
-    
-    def _extract_attack_type(self, response: str) -> Optional[str]:
-        """
-        Extract attack type from text response.
-        
-        This is a simple heuristic - in a real implementation, this would be more sophisticated.
-        """
-        response_lower = response.lower()
-        
-        # Common attack types to look for
-        attack_types = {
-            "syn flood": "SYN_FLOOD",
-            "arp spoof": "ARP_SPOOFING",
-            "icmp flood": "ICMP_FLOOD",
-            "port scan": "PORT_SCAN",
-            "tcp hijack": "TCP_HIJACKING",
-            "rst attack": "RST_ATTACK",
-            "denial of service": "DOS",
-            "ddos": "DDOS"
-        }
-        
-        for key, value in attack_types.items():
-            if key in response_lower:
-                return value
-        
-        return None
-    
-    def _extract_confidence(self, response: str) -> float:
-        """
-        Extract confidence score from text response.
-        
-        This is a simple regex approach - in a real implementation, this would be more sophisticated.
-        """
-        import re
-        
-        # Look for confidence score patterns
-        confidence_patterns = [
-            r'confidence[:\s]+(\d+\.?\d*)',
-            r'confidence[:\s]+(\d+)%',
-            r'confidence[:\s]+(high|medium|low)',
-            r'confidence[:\s]+(high|medium|low)',
-            r'confidence score[:\s]+(\d+\.?\d*)'
-        ]
-        
-        for pattern in confidence_patterns:
-            matches = re.search(pattern, response.lower())
-            if matches:
-                value = matches.group(1)
-                if value.replace('.', '', 1).isdigit():
-                    # Numeric confidence
-                    confidence = float(value)
-                    if confidence > 1 and confidence <= 100:  # Percentage
-                        return confidence / 100
-                    return min(1.0, max(0.0, confidence))  # Ensure 0-1 range
-                else:
-                    # Text-based confidence
-                    if value == 'high':
-                        return 0.9
-                    elif value == 'medium':
-                        return 0.6
-                    elif value == 'low':
-                        return 0.3
-        
-        # Default confidence
-        return 0.5
-    
-    def _extract_recommendations(self, response: str) -> List[str]:
-        """
-        Extract recommendations from text response.
-        
-        This is a simple heuristic - in a real implementation, this would be more sophisticated.
-        """
-        recommendations = []
-        lines = response.split('\n')
-        
-        # Keywords that often indicate recommendations
-        recommendation_indicators = [
-            "recommend", "suggestion", "advice", "should", "could", "mitigate",
-            "prevent", "block", "filter", "implement", "enable", "configure",
-            "set up", "install"
-        ]
-        
-        in_recommendation_section = False
-        
-        for line in lines:
-            line = line.strip()
-            
-            # Check if we're in a recommendation section
-            if "recommend" in line.lower() or "mitigat" in line.lower() or "action" in line.lower():
-                in_recommendation_section = True
-                if ":" in line:
-                    recommendations.append(line.split(":", 1)[1].strip())
-                continue
-            
-            # If we're in a recommendation section or the line has recommendation indicators
-            if in_recommendation_section or any(indicator in line.lower() for indicator in recommendation_indicators):
-                # Check if this is a bullet point or numbered item
-                if line.startswith("-") or line.startswith("*") or re.match(r"^\d+\.", line):
-                    recommendations.append(line.strip("- *").strip())
-        
-        return recommendations
-
-    def analyze_osi_layers(self, results: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Phân tích lưu lượng mạng theo các tầng của mô hình OSI sử dụng multiagent.
-        
-        Args:
-            results: Dictionary chứa kết quả phân tích gói tin.
-        
-        Returns:
-            Kết quả phân tích theo mô hình OSI.
-        """
-        # Xây dựng prompt theo mô hình OSI
-        prompt = self._build_osi_analysis_prompt(results)
-        
-        # Truy vấn agent
-        response = self.manager_agent.run(prompt)
-        
-        # Xử lý phản hồi
-        try:
-            # Cố gắng phân tích JSON nếu có thể
-            analyzed_results = json.loads(response)
-        except (json.JSONDecodeError, TypeError):
-            # Nếu không, sử dụng phản hồi gốc
-            analyzed_results = {"analysis": response}
-        
-        return analyzed_results
-    
-    def _build_osi_analysis_prompt(self, results: Dict[str, Any]) -> str:
-        """
-        Xây dựng prompt để phân tích lưu lượng mạng theo mô hình OSI.
-        
-        Args:
-            results: Dictionary chứa kết quả phân tích gói tin.
-            
-        Returns:
-            Prompt string.
-        """
-        prompt = """
-Là một chuyên gia điều tra số trong lĩnh vực mạng (Network Forensics Expert), hãy phân tích chi tiết lưu lượng mạng dưới đây theo mô hình OSI (7 tầng). 
-Phân tích sâu về các dấu hiệu bất thường và các vấn đề bảo mật tiềm ẩn ở mỗi tầng.
-
-Dưới đây là dữ liệu lưu lượng mạng cần phân tích:
-"""
-        
-        # Thêm thống kê giao thức nếu có
-        if "protocol_statistics" in results:
-            proto_stats = results["protocol_statistics"]
-            prompt += "\n## Thống kê giao thức:\n"
-            for proto, count in proto_stats.items():
-                prompt += f"- {proto}: {count} gói tin\n"
-        
-        # Thêm thống kê luồng nếu có
-        if "flow_statistics" in results:
-            flow_stats = results["flow_statistics"]
-            prompt += "\n## Thống kê luồng:\n"
-            for key, value in flow_stats.items():
-                prompt += f"- {key}: {value}\n"
-        
-        # Thêm thông tin tấn công nếu có
-        if "attacks" in results:
-            attacks = results["attacks"]
-            prompt += f"\n## Các cuộc tấn công đã phát hiện ({len(attacks)}):\n"
-            for attack in attacks[:5]:  # Giới hạn 5 tấn công để tránh prompt quá dài
-                attack_type = attack.get("attack_type", "Unknown")
-                severity = attack.get("severity", 0)
-                src = attack.get("src_ip", "unknown")
-                dst = attack.get("dst_ip", "unknown")
-                prompt += f"- {attack_type} (độ nghiêm trọng: {severity}/10): {src} -> {dst}\n"
-            
-            if len(attacks) > 5:
-                prompt += f"- ... và {len(attacks) - 5} tấn công khác\n"
-        
-        # Thêm hướng dẫn phân tích theo mô hình OSI
-        prompt += """
-\nHãy phân tích dữ liệu trên theo 7 tầng của mô hình OSI như sau:
-
-1. Tầng Vật lý (Physical Layer):
-   - Phân tích các vấn đề liên quan đến phương tiện truyền dẫn, tín hiệu.
-
-2. Tầng Liên kết dữ liệu (Data Link Layer):
-   - Phân tích frame, ARP, MAC, các vấn đề về chuyển mạch.
-   - Xác định dấu hiệu tấn công như ARP spoofing, MAC flooding.
-
-3. Tầng Mạng (Network Layer):
-   - Phân tích gói tin IP, định tuyến, phân mảnh.
-   - Xác định dấu hiệu tấn công như IP spoofing, ICMP flood.
-
-4. Tầng Giao vận (Transport Layer):
-   - Phân tích kết nối TCP/UDP, port.
-   - Xác định dấu hiệu tấn công như SYN flood, port scanning.
-
-5. Tầng Phiên (Session Layer):
-   - Phân tích phiên làm việc, các giao thức phiên.
-   - Xác định dấu hiệu tấn công như session hijacking.
-
-6. Tầng Trình diễn (Presentation Layer):
-   - Phân tích mã hóa, nén, chuẩn hóa dữ liệu.
-   - Xác định dấu hiệu tấn công như SSL exploitation.
-
-7. Tầng Ứng dụng (Application Layer):
-   - Phân tích giao thức ứng dụng (HTTP, DNS, FTP...).
-   - Xác định dấu hiệu tấn công như DDoS, injection attacks.
-
-Cho mỗi tầng, hãy:
-1. Mô tả chi tiết các phát hiện chính
-2. Xác định các dấu hiệu bất thường và mức độ nghiêm trọng (thấp/trung bình/cao)
-3. Cung cấp các khuyến nghị bảo mật cụ thể
-4. Liên kết các phát hiện với các kỹ thuật tấn công đã biết (nếu có)
-
-Định dạng phân tích theo Markdown, với các đề mục rõ ràng và phân cấp phù hợp. Tập trung vào phân tích chuyên sâu nhưng ngắn gọn.
-"""
-        
-        return prompt
-
     def direct_query(self, query: str) -> str:
         """
         Xử lý trực tiếp câu hỏi từ người dùng khi không liên quan đến phân tích mạng.
@@ -495,3 +251,15 @@ Cho mỗi tầng, hãy:
             return response
         except Exception as e:
             return f"Xin lỗi, tôi không thể xử lý câu hỏi của bạn lúc này. Lỗi: {str(e)}"
+    
+    def analyze_osi_layers(self, results: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Phân tích lưu lượng mạng theo các tầng của mô hình OSI sử dụng multiagent.
+        
+        Args:
+            results: Dictionary chứa kết quả phân tích gói tin.
+        
+        Returns:
+            Kết quả phân tích theo mô hình OSI.
+        """
+        return self.osi_analyzer.analyze(results)

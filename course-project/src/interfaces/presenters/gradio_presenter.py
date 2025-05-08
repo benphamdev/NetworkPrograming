@@ -47,41 +47,34 @@ class GradioPresenter:
             empty_chart = self.chart_creator._create_empty_chart("Không có dữ liệu")
             return empty_msg, None, empty_chart, empty_chart, empty_chart, empty_chart
         
-        # Lấy thông tin từ kết quả phân tích đã được lưu
-        results = self.base_presenter.latest_results
+        # Cập nhật thông tin trong analyzer.pcap_analyzer
+        self.analyzer.pcap_analyzer.latest_pcap_file = self.base_presenter.latest_pcap_file
+        self.analyzer.pcap_analyzer.latest_results = self.base_presenter.latest_results
         
         # Tạo tóm tắt
-        summary = f"## Kết quả phân tích\n\n"
-        if self.base_presenter.latest_pcap_file:
-            summary += f"File: {os.path.basename(self.base_presenter.latest_pcap_file)}\n\n"
-        
-        if "attack_count" in results:
-            if results["attack_count"] > 0:
-                summary += f"⚠️ **Phát hiện {results['attack_count']} cuộc tấn công!**\n\n"
-            else:
-                summary += "✅ **Không phát hiện tấn công nào.**\n\n"
-        
-        # Thêm thống kê luồng
-        if "flow_statistics" in results:
-            flow_stats = results["flow_statistics"]
-            summary += f"- Tổng số luồng: {flow_stats.get('total_flows', 0)}\n"
-            summary += f"- Luồng đã thiết lập: {flow_stats.get('established_count', 0)}\n"
-            summary += f"- Luồng bị đặt lại: {flow_stats.get('reset_count', 0)}\n"
+        summary = self.analyzer.pcap_analyzer._create_summary(
+            self.base_presenter.latest_pcap_file, 
+            self.base_presenter.latest_results
+        )
         
         # Tạo bảng tấn công
-        attack_table = self.base_presenter.format_attack_table(results.get("attacks", []))
+        attack_table = self.analyzer.pcap_analyzer._format_attack_table(
+            self.base_presenter.latest_results.get("attacks", [])
+        )
         
         # Tạo biểu đồ giao thức
-        protocol_chart = self.chart_creator.create_protocol_chart(results)
+        protocol_chart = self.chart_creator.create_protocol_chart(self.base_presenter.latest_results)
         
         # Tạo biểu đồ mức độ nghiêm trọng của tấn công
-        attack_chart = self.chart_creator.create_attack_severity_chart(results.get("attacks", []))
+        attack_chart = self.chart_creator.create_attack_severity_chart(
+            self.base_presenter.latest_results.get("attacks", [])
+        )
         
         # Tạo đồ thị luồng
-        flow_graph = self.chart_creator.create_flow_graph(results)
+        flow_graph = self.chart_creator.create_flow_graph(self.base_presenter.latest_results)
         
         # Tạo trực quan hóa cụ thể cho TCP
-        tcp_visualizations = self.chart_creator.create_tcp_visualizations(results)
+        tcp_visualizations = self.chart_creator.create_tcp_visualizations(self.base_presenter.latest_results)
         
         return summary, attack_table, protocol_chart, attack_chart, flow_graph, tcp_visualizations
     
