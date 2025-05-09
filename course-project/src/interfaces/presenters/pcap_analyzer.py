@@ -5,6 +5,8 @@ from typing import Dict, Tuple
 import os
 import pandas as pd
 from src.interfaces.presenters.chart_creator import ChartCreator
+# Tạo instance SmolagentGateway nếu chưa có
+from src.interfaces.gateways.smolagent_gateway import SmolagentGateway
 
 class PCAPAnalyzer:
     """Phân tích file PCAP và định dạng kết quả cho UI."""
@@ -104,10 +106,9 @@ class PCAPAnalyzer:
         try:
             # Tải các gói tin thô trực tiếp mà không thực hiện phân tích
             packets = self.controller.analyze_packet_use_case.packet_repository.load_pcap_file(file_path)
-            
-            # Tạo instance SmolagentGateway nếu chưa có
-            from src.interfaces.gateways.smolagent_gateway import SmolagentGateway
+
             smolagent_gateway = getattr(self.controller, 'smolagent_gateway', None)
+
             if not smolagent_gateway:
                 smolagent_gateway = SmolagentGateway()
             

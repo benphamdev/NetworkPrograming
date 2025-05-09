@@ -55,19 +55,43 @@ class SmolagentGateway:
                 {
                     "role": "system",
                     "content": (
-                        "Bạn là một kỹ sư mạng (Network Engineer) chuyên nghiệp với kinh nghiệm phân tích gói tin và điều tra lỗi mạng. "
-                        "Nhiệm vụ của bạn là: "
-                        "\n1. Phát hiện rủi ro bảo mật tiềm ẩn mà hacker có thể khai thác trong mạng "
-                        "\n2. Phân tích gói tin để debug các vấn đề kết nối như thiết bị không ping được nhau "
-                        "\n3. Xác định chính xác nguyên nhân gốc rễ của vấn đề (định tuyến, tường lửa, DNS, ARP, v.v.) "
-                        "\n4. Đề xuất các biện pháp khắc phục cụ thể cho từng loại lỗi "
-                        "\n5. Phân tích lưu lượng mạng theo thời gian thực để tìm các bất thường "
-                        "\n\nKhi phân tích, hãy tập trung vào: "
-                        "\n- Kiểm tra lỗi ở từng tầng trong mô hình OSI (vật lý, liên kết, mạng, giao vận...) "
-                        "\n- Phân tích các giao thức quan trọng (ICMP, ARP, TCP/IP, UDP, DNS) "
-                        "\n- Xác định chính xác các dấu hiệu tấn công (port scan, ARP spoofing, DDoS, brute force) "
-                        "\n- Đưa ra quy trình debug có hệ thống và các lệnh đề xuất "
-                        "\n\nHiển thị kết quả một cách rõ ràng, súc tích, và thực tế, giúp network engineer dễ dàng hiểu vấn đề và áp dụng giải pháp."
+                        "Bạn là một kỹ sư mạng (Network Engineer) chuyên nghiệp với kinh nghiệm phân tích gói tin và điều tra sự cố mạng. "
+                        "\n\n## Nhiệm vụ chính của bạn:"
+                        "\n1. Debug vấn đề kết nối mạng - phân tích tại sao các thiết bị không ping được đến nhau hoặc không thể truy cập dịch vụ"
+                        "\n2. Xác định chính xác nguyên nhân của sự cố (vấn đề ở Router, Switch, Firewall, DNS, v.v.)"
+                        "\n3. Phát hiện dấu hiệu tấn công mạng thông qua phân tích mẫu lưu lượng và hành vi bất thường"
+                        "\n4. Thực hiện phân tích sâu theo mô hình OSI để xác định các vấn đề ở từng tầng"
+                        "\n5. Đề xuất hướng khắc phục và phòng ngừa chính xác cho từng loại vấn đề"
+                        
+                        "\n\n## Các loại tấn công cần phân tích:"
+                        "\n- ARP: Spoofing, Poisoning, Man-in-the-Middle"
+                        "\n- DHCP: Spoofing, Starvation, DOS, Rogue DHCP Server"
+                        "\n- DNS: Cache Poisoning, Tunneling, Spoofing, Amplification"
+                        "\n- ICMP: Ping Flooding, Tunneling, Smurf Attack"
+                        "\n- TCP/IP: SYN Flood, RST Attack, Session Hijacking, Port Scanning"
+                        "\n- DDoS: Reflection/Amplification, Slowloris, HTTP Flooding"
+                        "\n- Reconnaissance: Passive, Active, Port Scanning, OS Fingerprinting"
+                        
+                        "\n\n## Phương pháp phân tích:"
+                        "\n1. Kiểm tra theo mô hình OSI từ tầng thấp đến cao"
+                        "\n   - Tầng vật lý: Lỗi cáp, port, tín hiệu"
+                        "\n   - Tầng liên kết dữ liệu: Xung đột MAC, ARP poisoning, VLAN issues"
+                        "\n   - Tầng mạng: IP routing, ICMP, fragmentation, TTL issues"
+                        "\n   - Tầng giao vận: TCP handshake, RST packets, port availability"
+                        "\n   - Tầng ứng dụng: DNS resolution, HTTP errors, TLS issues"
+                        "\n2. Phân tích cờ TCP (SYN, ACK, RST, FIN, PSH, URG) để xác định tình trạng kết nối"
+                        "\n3. Kiểm tra thời gian phản hồi (RTT) và timeout patterns"
+                        "\n4. Phân tích thay đổi bất thường trong ARP cache"
+                        "\n5. Xác định luồng dữ liệu bất thường hoặc asymmetric routing"
+                        
+                        "\n\n## Khi đưa ra phân tích:"
+                        "\n- Đề xuất các lệnh debug và công cụ phù hợp (tcpdump, Wireshark, netstat, ping, traceroute, v.v.)"
+                        "\n- Cung cấp quy trình kiểm tra có hệ thống và có thể thực hiện được"
+                        "\n- Mô tả chính xác về dấu hiệu của từng loại tấn công hoặc vấn đề"
+                        "\n- Đề xuất giải pháp ngắn hạn và dài hạn"
+                        "\n- Đánh giá mức độ nghiêm trọng và tác động tiềm tàng"
+                        
+                        "\nHiển thị kết quả một cách rõ ràng, súc tích, và thực tế, tập trung vào nguyên nhân gốc rễ và các giải pháp để network engineer có thể áp dụng ngay lập tức."
                     )
                 }
             ],
@@ -422,11 +446,33 @@ class SmolagentGateway:
             base_prompt = custom_prompt
         else:
             base_prompt = """
-            Là chuyên gia phân tích mạng, hãy phân tích chi tiết các gói tin dưới đây:
-            - Xác định các dấu hiệu tấn công hoặc hoạt động bất thường
-            - Phân tích các kết nối và luồng dữ liệu
-            - Đánh giá rủi ro bảo mật
-            - Đề xuất use case phân tích mới để phát hiện tấn công hiệu quả hơn
+            Là kỹ sư mạng (Network Engineer) chuyên nghiệp, hãy phân tích chi tiết các gói tin dưới đây:
+
+            ## Yêu cầu phân tích:
+            1. Phân tích tình trạng kết nối mạng và xác định các vấn đề tiềm ẩn:
+               - Xác định thiết bị nào không ping được đến nhau hoặc không thể truy cập dịch vụ
+               - Phân tích lỗi ở các thiết bị mạng (Router, Switch, Firewall, v.v.)
+               - Kiểm tra vấn đề routing, NAT, và các policy ngăn chặn
+            
+            2. Phát hiện các dấu hiệu tấn công mạng:
+               - ARP: Spoofing, Poisoning, Man-in-the-Middle
+               - DHCP: Spoofing, Starvation, DOS, Rogue DHCP Server
+               - DNS: Cache Poisoning, Tunneling, Spoofing, Amplification
+               - ICMP: Ping Flooding, Tunneling, Smurf Attack
+               - TCP/IP: SYN Flood, RST Attack, Session Hijacking, Port Scanning
+               - DDoS: Reflection/Amplification, Slowloris, HTTP Flooding
+            
+            3. Phân tích theo mô hình OSI (xác định vấn đề ở từng tầng):
+               - Tầng liên kết dữ liệu: Xung đột MAC, ARP poisoning, VLAN issues
+               - Tầng mạng: IP routing, ICMP, fragmentation, TTL issues
+               - Tầng giao vận: TCP handshake, RST packets, port availability
+               - Tầng ứng dụng: DNS resolution, HTTP errors, TLS issues
+            
+            4. Đề xuất giải pháp:
+               - Các lệnh và công cụ debug phù hợp (tcpdump, Wireshark, netstat, ping, v.v.)
+               - Quy trình kiểm tra có hệ thống
+               - Giải pháp khắc phục ngắn hạn và dài hạn
+               - Đánh giá mức độ nghiêm trọng và tác động
             """
         
         prompt = f"{base_prompt}\n\n"
@@ -447,7 +493,7 @@ class SmolagentGateway:
         
         # Thêm thông tin chi tiết về một số gói tin (giới hạn để tránh prompt quá dài)
         prompt += "\n## Chi tiết các gói tin mẫu\n"
-        sample_count = min(10, len(packets))  # Lấy tối đa 10 gói tin
+        sample_count = min(20, len(packets))  # Tăng số lượng gói tin mẫu lên 20
         
         for i, packet in enumerate(packets[:sample_count]):
             prompt += f"\n### Gói tin #{i+1}\n"
@@ -463,54 +509,70 @@ class SmolagentGateway:
                     # Thông tin TCP flags
                     if hasattr(packet, 'flags'):
                         prompt += f"- TCP flags: {packet.flags}\n"
+                    # TCP sequence và ack number
+                    for attr in ['seq_num', 'ack_num', 'window_size']:
+                        if hasattr(packet, attr):
+                            prompt += f"- {attr}: {getattr(packet, attr)}\n"
                     # Thử truy cập các phương thức cụ thể nếu có
-                    for method in ['is_syn', 'is_ack', 'is_rst', 'is_fin']:
+                    for method in ['is_syn', 'is_ack', 'is_rst', 'is_fin', 'is_psh', 'is_urg']:
                         if hasattr(packet, method) and callable(getattr(packet, method)):
                             prompt += f"- {method}: {getattr(packet, method)()}\n"
                 
                 elif packet.protocol == 'ICMP':
                     # Thông tin ICMP
-                    for attr in ['icmp_type', 'icmp_code']:
+                    for attr in ['icmp_type', 'icmp_code', 'icmp_id', 'icmp_seq']:
                         if hasattr(packet, attr):
                             prompt += f"- {attr}: {getattr(packet, attr)}\n"
                     # Thử truy cập các phương thức cụ thể
-                    for method in ['is_echo_request', 'is_echo_reply']:
+                    for method in ['is_echo_request', 'is_echo_reply', 'is_unreachable', 'is_redirect']:
                         if hasattr(packet, method) and callable(getattr(packet, method)):
                             prompt += f"- {method}: {getattr(packet, method)()}\n"
                 
                 elif packet.protocol == 'ARP':
                     # Thông tin ARP
-                    for attr in ['src_mac', 'dst_mac', 'sender_ip', 'target_ip']:
+                    for attr in ['src_mac', 'dst_mac', 'sender_ip', 'sender_mac', 'target_ip', 'target_mac', 'operation']:
                         if hasattr(packet, attr):
                             prompt += f"- {attr}: {getattr(packet, attr)}\n"
                     # Thử phương thức
-                    for method in ['is_request', 'is_reply']:
+                    for method in ['is_request', 'is_reply', 'is_announcement']:
                         if hasattr(packet, method) and callable(getattr(packet, method)):
                             prompt += f"- {method}: {getattr(packet, method)()}\n"
                 
                 elif packet.protocol == 'UDP':
                     # Thông tin UDP
-                    for attr in ['length', 'checksum']:
+                    for attr in ['length', 'checksum', 'payload_length']:
+                        if hasattr(packet, attr):
+                            prompt += f"- {attr}: {getattr(packet, attr)}\n"
+                
+                elif packet.protocol == 'DNS':
+                    # Thông tin DNS
+                    for attr in ['query_name', 'query_type', 'answer', 'response_code']:
+                        if hasattr(packet, attr):
+                            prompt += f"- {attr}: {getattr(packet, attr)}\n"
+                    # Thử phương thức
+                    for method in ['is_query', 'is_response', 'has_answers']:
+                        if hasattr(packet, method) and callable(getattr(packet, method)):
+                            prompt += f"- {method}: {getattr(packet, method)()}\n"
+                
+                elif packet.protocol == 'DHCP':
+                    # Thông tin DHCP
+                    for attr in ['message_type', 'client_mac', 'requested_ip', 'client_ip', 'server_ip']:
                         if hasattr(packet, attr):
                             prompt += f"- {attr}: {getattr(packet, attr)}\n"
         
         if len(packets) > sample_count:
             prompt += f"\n*...và {len(packets) - sample_count} gói tin khác...*\n"
-        
-        # Thêm yêu cầu phân tích cụ thể
-        prompt += """
-        \n## Yêu cầu phân tích
-        
-        Dựa trên dữ liệu gói tin trên, hãy cung cấp:
-        
-        1. Phân tích tổng quan về lưu lượng mạng
-        2. Các dấu hiệu tấn công hoặc hoạt động bất thường
-        3. Đề xuất các use case phân tích mới để phát hiện các loại tấn công có thể xảy ra trong môi trường mạng
-        4. Mức độ tin cậy của phân tích (0-1)
-        5. Khuyến nghị bảo mật cụ thể
-        
-        Hãy cung cấp phân tích chi tiết và chuyên sâu dựa trên kiến thức của chuyên gia mạng.
-        """
+            
+        # Yêu cầu cụ thể hơn về phân tích
+        prompt += "\n## Yêu cầu phân tích chi tiết\n"
+        prompt += "Dựa trên các gói tin trên, hãy phân tích:\n"
+        prompt += "1. Các vấn đề kết nối mạng hiện tại hoặc tiềm ẩn\n"
+        prompt += "2. Dấu hiệu cụ thể của các cuộc tấn công nếu có\n"
+        prompt += "3. Phân tích theo mô hình OSI - xác định vấn đề ở từng tầng\n"
+        prompt += "4. Đánh giá tỷ lệ các gói tin TCP reset, retransmission và failed connections\n"
+        prompt += "5. Phân tích timeout hoặc latency bất thường\n"
+        prompt += "6. Đề xuất giải pháp và các lệnh debug cụ thể\n"
+        prompt += "7. Kết luận về nguyên nhân gốc rễ của vấn đề\n"
         
         return prompt
     

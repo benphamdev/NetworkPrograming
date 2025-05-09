@@ -231,10 +231,9 @@ class GradioPresenter:
 
     def launch_interface(self):
         """Launch the Gradio interface."""
-        with gr.Blocks(title="Network Packet Analyzer", theme=gr.themes.Soft()) as interface:
-            gr.Markdown("# Network Packet Analyzer")
-            gr.Markdown("Công cụ phân tích gói tin mạng để phát hiện các cuộc tấn công như ARP spoofing, SYN flood và ICMP flood")
-            
+        with gr.Blocks(title="Network Packet Analyzer cho Network Engineer", theme=gr.themes.Soft()) as interface:
+            gr.Markdown("# Network Packet Analyzer cho Network Engineer")
+
             # Biến state để lưu thông tin file hiện tại
             current_file_info = gr.State("")
             
@@ -269,7 +268,7 @@ class GradioPresenter:
                 with gr.Row():
                     with gr.Column(scale=3):
                         chat_history = gr.Chatbot(
-                            label="Tư vấn rủi ro mạng",
+                            label="Tư vấn debug mạng và rủi ro bảo mật",
                             height=500,
                             render=True,
                             elem_id="chatbox",
@@ -277,41 +276,51 @@ class GradioPresenter:
                         )
                     
                     with gr.Column(scale=1):
-                        gr.Markdown("### Tư vấn rủi ro mạng")
+                        gr.Markdown("### Tư vấn kỹ sư mạng")
                         current_chat_file = gr.Markdown("File đang phân tích: *Chưa có file*")
                         gr.Markdown("""
                         Hỏi các câu hỏi về:
-                        - Rủi ro mạng phát hiện được
-                        - Tấn công và giảm thiểu
-                        - Kết nối TCP
-                        - Phân tích giao thức
+                        - Debug vấn đề kết nối mạng
+                        - Phát hiện và khắc phục tấn công
+                        - Phân tích TCP/IP và các giao thức
+                        - Đề xuất công cụ và lệnh debug
                         """)
                         
                         gr.Markdown("---")
                         gr.Markdown("#### Các câu hỏi gợi ý:")
                         gr.Markdown("""
-                        - Phân tích rủi ro mạng trong dữ liệu
-                        - Cách giảm thiểu các cuộc tấn công đã phát hiện
-                        - File này có phát hiện tấn công nào không?
+                        - Tại sao các thiết bị này không ping được nhau?
+                        - Phân tích các vấn đề kết nối trong mạng này
+                        - Có dấu hiệu tấn công ARP spoofing không?
+                        - Phân tích các gói tin ICMP unreachable
                         - Phân tích lưu lượng mạng theo mô hình OSI
-                        - Phân tích các vấn đề ở tầng mạng (Network) và tầng giao vận (Transport)
+                        - Đề xuất các lệnh để debug vấn đề routing
                         """)
                         
                         clear_chat_btn = gr.Button("Xóa lịch sử chat", variant="secondary")
                 
                 with gr.Row():
                     user_question = gr.Textbox(
-                        label="Nhập câu hỏi về rủi ro mạng",
-                        placeholder="Ví dụ: Phân tích rủi ro mạng trong file PCAP tôi vừa tải lên...",
+                        label="Nhập câu hỏi về vấn đề mạng",
+                        placeholder="Ví dụ: Phân tích tại sao các thiết bị không ping được đến nhau trong file PCAP...",
                         max_lines=3
                     )
                     submit_btn = gr.Button("Gửi", variant="primary")
             
             # Tab phân tích AI chi tiết
-            with gr.Tab("Phân tích AI chi tiết"):
+            with gr.Tab("Phân tích theo mô hình OSI"):
                 with gr.Row():
                     with gr.Column():
-                        gr.Markdown("### Phân tích AI chi tiết theo mô hình OSI")
+                        gr.Markdown("### Phân tích chi tiết theo mô hình OSI")
+                        gr.Markdown("""
+                        Phân tích các vấn đề ở từng tầng của mô hình OSI:
+                        - Tầng vật lý (Physical): Vấn đề tín hiệu, mất gói tin
+                        - Tầng liên kết dữ liệu (Data Link): ARP, MAC, VLAN
+                        - Tầng mạng (Network): Định tuyến IP, ICMP, fragmentation
+                        - Tầng giao vận (Transport): TCP/UDP, cổng, cờ TCP
+                        - Tầng phiên & trình diễn (Session & Presentation): Thiết lập phiên, mã hóa
+                        - Tầng ứng dụng (Application): HTTP, DNS, DHCP, FTP
+                        """)
                         ai_analysis_detail = gr.Markdown("Tải lên file PCAP trong tab 'Phân tích PCAP' để xem phân tích chi tiết theo mô hình OSI...")
                         refresh_detail_btn = gr.Button("Làm mới phân tích", variant="secondary")
                     

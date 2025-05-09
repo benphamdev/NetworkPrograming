@@ -1,22 +1,40 @@
-# Network Packet Analyzer
+# Network Packet Analyzer cho Network Engineer
 
-Công cụ phân tích gói tin mạng để phát hiện các cuộc tấn công như ARP spoofing, SYN flood, ICMP flood và các hoạt động đáng ngờ khác.
+Công cụ chuyên nghiệp hỗ trợ kỹ sư mạng (Network Engineer) trong việc debug vấn đề kết nối, phát hiện lỗi mạng, và phân tích các cuộc tấn công mạng.
 
-## Tính năng
+## Tính năng chính
 
-- Phân tích file pcap để phát hiện các cuộc tấn công mạng
-- Hỗ trợ phân tích nhiều loại giao thức (TCP, UDP, ICMP, ARP)
-- Phát hiện các loại tấn công phổ biến:
-  - SYN flood
-  - ARP spoofing
-  - Port scanning
-  - ICMP flood
-  - Reset attacks
-- Trực quan hóa luồng mạng và các cuộc tấn công
-- Tích hợp SmolaAgent AI để phân tích thông minh (cần API key)
-- Hai loại giao diện:
-  - Giao diện dòng lệnh thân thiện với người dùng
-  - Giao diện web trực quan với biểu đồ và đồ thị
+- **Debug vấn đề kết nối mạng**:
+  - Phân tích tại sao các thiết bị không ping được đến nhau
+  - Xác định chính xác thành phần mạng nào đang gặp trục trặc (Router, Switch, Firewall, DNS, v.v.)
+  - Phân tích timeout, latency và retransmission
+
+- **Phân tích theo mô hình OSI**:
+  - Phân tích các vấn đề ở từng tầng của mô hình OSI
+  - Tầng vật lý: Lỗi cáp, port, tín hiệu
+  - Tầng liên kết dữ liệu: Xung đột MAC, ARP poisoning, VLAN issues
+  - Tầng mạng: IP routing, ICMP, fragmentation, TTL issues
+  - Tầng giao vận: TCP handshake, RST packets, port availability
+  - Tầng ứng dụng: DNS resolution, HTTP errors, TLS issues
+
+- **Phát hiện các loại tấn công mạng**:
+  - ARP: Spoofing, Poisoning, Man-in-the-Middle
+  - DHCP: Spoofing, Starvation, DOS, Rogue DHCP Server
+  - DNS: Cache Poisoning, Tunneling, Spoofing, Amplification
+  - ICMP: Ping Flooding, Tunneling, Smurf Attack
+  - TCP/IP: SYN Flood, RST Attack, Session Hijacking, Port Scanning
+  - DDoS: Reflection/Amplification, Slowloris, HTTP Flooding
+
+- **Tư vấn và đề xuất giải pháp**:
+  - Đề xuất các lệnh debug và công cụ phù hợp (tcpdump, Wireshark, netstat, ping, v.v.)
+  - Cung cấp quy trình kiểm tra có hệ thống
+  - Hướng dẫn chi tiết để khắc phục vấn đề
+
+- **Phân tích và trực quan hóa**:
+  - Phân tích file pcap
+  - Trực quan hóa luồng mạng và các cuộc tấn công
+  - Phân tích cờ TCP để xác định tình trạng kết nối
+  - Tích hợp SmolaAgent AI để phân tích chi tiết và thông minh
 
 ## Cài đặt
 
@@ -25,7 +43,7 @@ Công cụ phân tích gói tin mạng để phát hiện các cuộc tấn côn
 - Scapy
 - Matplotlib, NetworkX, Seaborn, Plotly
 - Gradio (cho giao diện web)
-- SmolaAgent (tùy chọn, cho phân tích AI)
+- SmolaAgent (cho phân tích AI)
 
 ### Cài đặt thông qua pip
 
@@ -38,11 +56,11 @@ cd network-packet-analyzer
 pip install -r requirements.txt
 ```
 
-### Cấu hình SmolaAgent (tùy chọn)
+### Cấu hình SmolaAgent
 
 Để sử dụng SmolaAgent, bạn cần:
 
-1. Tạo file `.env` trong thư mục gốc của dự án
+1. Tạo file `.env` trong thư mục gốc của dự án bằng cách sao chép từ mẫu `example.env`
 2. Thêm API key của bạn vào file:
 
 ```
@@ -63,6 +81,8 @@ Truy cập giao diện web tại http://localhost:7860 trong trình duyệt củ
 
 Giao diện web bao gồm các tab:
 - **Phân tích PCAP**: Tải lên và phân tích file pcap
+- **ChatBox Tư Vấn**: Tư vấn debug mạng và rủi ro bảo mật
+- **Phân tích theo mô hình OSI**: Phân tích chi tiết các vấn đề ở từng tầng OSI
 - **Giám sát thời gian thực**: Theo dõi lưu lượng mạng theo thời gian thực
 - **Chi tiết tấn công**: Xem chi tiết các cuộc tấn công đã phát hiện
 - **Thống kê luồng**: Xem thống kê về luồng mạng
@@ -99,6 +119,25 @@ python main.py stats --hours 1
 python main.py attacks --hours 24
 ```
 
+## Cách sử dụng công cụ cho Network Engineer
+
+### Kịch bản 1: Debug vấn đề kết nối giữa các thiết bị
+1. Tải lên file PCAP chứa gói tin từ thiết bị gặp vấn đề kết nối
+2. Nhấn "Phân tích" để thực hiện phân tích tự động
+3. Chuyển đến tab "Phân tích theo mô hình OSI" để xem chi tiết vấn đề ở từng tầng
+4. Sử dụng ChatBox để hỏi cụ thể: "Tại sao thiết bị X không ping được đến thiết bị Y?"
+
+### Kịch bản 2: Phát hiện tấn công mạng
+1. Tải lên file PCAP cần phân tích
+2. Xem tab "Chi tiết tấn công" để xem các cuộc tấn công đã phát hiện
+3. Sử dụng ChatBox để hỏi thêm về tấn công: "Có dấu hiệu tấn công ARP spoofing không?"
+4. Nhận đề xuất các biện pháp khắc phục và giảm thiểu rủi ro
+
+### Kịch bản 3: Phân tích hiệu suất mạng
+1. Sử dụng tab "Thống kê luồng" để xem phân bố giao thức và luồng mạng
+2. Xác định các luồng có vấn đề (reset, retransmission, timeout)
+3. Yêu cầu phân tích chi tiết về hiệu suất TCP/IP qua ChatBox
+
 ## Kiến trúc Clean Architecture
 
 Dự án đã được thiết kế theo nguyên tắc Clean Architecture và OOP để cải thiện tính module, khả năng bảo trì, và khả năng kiểm thử. Kiến trúc hiện tại tuân theo các nguyên tắc:
@@ -124,58 +163,37 @@ src/
   └── utils/               # Tiện ích chung
 ```
 
-## Các lớp chính và trách nhiệm
+## Dấu hiệu phát hiện các cuộc tấn công
 
-### Domain Layer
+Tool sẽ phát hiện các loại tấn công dựa trên các dấu hiệu sau:
 
-Tập trung vào các thực thể và quy tắc nghiệp vụ cốt lõi. Lớp này không phụ thuộc vào bất kỳ lớp khác.
+1. **ARP Spoofing/Poisoning**:
+   - Nhiều địa chỉ MAC khác nhau cho cùng một địa chỉ IP
+   - Thông báo ARP không được yêu cầu
+   - ARP reply không phù hợp với các request đã biết
+   - Địa chỉ MAC của gateway bị thay đổi
 
-### Use Cases Layer
+2. **DHCP Starvation/Spoofing**:
+   - Nhiều DHCP requests từ cùng một thiết bị với MAC khác nhau
+   - DHCP server không được ủy quyền cung cấp địa chỉ IP
+   - Cạn kiệt pool địa chỉ IP của DHCP server
 
-Chứa logic nghiệp vụ cụ thể, triển khai các trường hợp sử dụng của ứng dụng.
+3. **DNS Cache Poisoning/Tunneling**:
+   - Gói tin DNS quá lớn
+   - Mã hóa đáng ngờ trong truy vấn và phản hồi DNS
+   - Nhiều truy vấn DNS đến tên miền lạ
+   - Phản hồi DNS không khớp với truy vấn
 
-### Interfaces Layer
+4. **TCP/IP Attacks**:
+   - SYN Flood: Nhiều gói SYN không hoàn tất handshake
+   - RST Attack: Gói RST giả mạo cắt đứt kết nối
+   - Port Scanning: Truy cập đến nhiều cổng trên cùng một host
+   - Session Hijacking: Sequence number dự đoán được
 
-#### Presenters:
-- **BasePresenter**: Lớp cơ sở cho các presenter với chức năng chung
-- **AnalyzerComponent**: Xử lý việc phân tích PCAP và điều phối các lớp phân tích con
-- **ChatHandler**: Quản lý hội thoại chat với người dùng về phân tích mạng
-- **PCAPAnalyzer**: Phân tích file PCAP và định dạng kết quả cho UI
-- **SummaryCreator**: Tạo các tóm tắt phân tích từ dữ liệu PCAP
-- **ChartCreator**: Tạo các biểu đồ và trực quan hóa
-- **GradioPresenter**: Giao diện web sử dụng Gradio
-- **CLIPresenter**: Giao diện dòng lệnh
-
-#### Gateways:
-- **SmolagentGateway**: Tương tác với multiagent AI framework
-- **OSILayerAnalyzer**: Phân tích lưu lượng mạng theo mô hình OSI
-- **ResponseExtractor**: Trích xuất thông tin có cấu trúc từ phản hồi AI
-- **ScapyPacketGateway**: Tương tác với thư viện Scapy để phân tích gói tin
-
-#### Controllers:
-- **PacketAnalyzerController**: Điều phối phân tích gói tin và tấn công
-
-### Infrastructure Layer
-
-Các triển khai cụ thể cho interfaces như repository, database, external service connectors.
-
-## Cải tiến kiến trúc
-
-1. **Giới hạn kích thước code**: Mỗi file giữ trong khoảng 200-300 dòng code
-2. **Phân cấp rõ ràng**: Các lớp có trách nhiệm rõ ràng và tập trung
-3. **Dependency Injection**: Các lớp nhận các phụ thuộc thông qua constructor
-4. **Phân tách trách nhiệm**: Mỗi lớp có một trách nhiệm duy nhất
-5. **Tính module hóa cao**: Các lớp có thể được thay thế hoặc điều chỉnh độc lập
-
-## Các cảnh báo tấn công
-
-Tool sẽ phát hiện các loại tấn công sau:
-
-1. **SYN Flood**: Khi có một lượng lớn gói SYN được gửi đến một máy chủ
-2. **ARP Spoofing**: Khi có nhiều địa chỉ MAC khác nhau cho cùng một địa chỉ IP
-3. **Port Scanning**: Khi có nhiều cổng được quét từ cùng một địa chỉ nguồn
-4. **ICMP Flood**: Khi có quá nhiều gói ICMP echo request gửi đến
-5. **Reset Attacks**: Khi có bất thường về số lượng gói RST
+5. **DDoS Attacks**:
+   - Lưu lượng bất thường từ nhiều nguồn đến một đích
+   - Tỷ lệ cao các kết nối không hoàn chỉnh
+   - Tăng đột biến lưu lượng mạng đến các port hoặc dịch vụ cụ thể
 
 ## Đóng góp
 
