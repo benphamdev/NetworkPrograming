@@ -2,7 +2,7 @@
 SmolagentGateway - Interface for integrating with smolagent framework for analysis.
 It provides methods to analyze network traffic patterns and attack indicators using a multi-agent architecture.
 """
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import os
 import json
 
@@ -373,3 +373,160 @@ class SmolagentGateway:
             Kết quả phân tích theo mô hình OSI.
         """
         return self.osi_analyzer.analyze(results)
+    
+    def analyze_raw_packets(self, packets: List, custom_prompt: str = None) -> Dict[str, Any]:
+        """
+        Phân tích trực tiếp danh sách gói tin thô thay vì sử dụng kết quả phân tích.
+        
+        Args:
+            packets: Danh sách các gói tin thô cần phân tích
+            custom_prompt: Prompt tùy chỉnh để hướng dẫn AI phân tích. Nếu None, sẽ dùng prompt mặc định
+            
+        Returns:
+            Kết quả phân tích từ AI
+        """
+        if not packets:
+            return {"analysis": "Không có gói tin nào để phân tích."}
+            
+        # Xây dựng prompt từ raw packets
+        prompt = self._build_raw_packets_prompt(packets, custom_prompt)
+        
+        # Gọi manager_agent để phân tích
+        try:
+            response = self.manager_agent.run(prompt)
+            
+            # Xử lý phản hồi
+            try:
+                # Thử phân tích JSON nếu có thể
+                result = json.loads(response)
+            except (json.JSONDecodeError, TypeError):
+                # Nếu không, sử dụng phản hồi dạng văn bản
+                result = {"analysis": response}
+                
+            return result
+        except Exception as e:
+            return {"analysis": f"Lỗi khi phân tích gói tin: {str(e)}"}
+    
+    def _build_raw_packets_prompt(self, packets: List, custom_prompt: str = None) -> str:
+        """
+        Xây dựng prompt từ danh sách gói tin thô.
+        
+        Args:
+            packets: Danh sách các gói tin thô
+            custom_prompt: Prompt tùy chỉnh của người dùng
+            
+        Returns:
+            Prompt để gửi đến LLM
+        """
+        if custom_prompt:
+            base_prompt = custom_prompt
+        else:
+            base_prompt = """
+            Là chuyên gia phân tích mạng, hãy phân tích chi tiết các gói tin dưới đây:
+            - Xác định các dấu hiệu tấn công hoặc hoạt động bất thường
+            - Phân tích các kết nối và luồng dữ liệu
+            - Đánh giá rủi ro bảo mật
+            - Đề xuất use case phân tích mới để phát hiện tấn công hiệu quả hơn
+            """
+        
+        prompt = f"{base_prompt}\n\n"
+        
+        # Thêm thông tin tổng quan về các gói tin
+        prompt += f"## Tổng quan\n"
+        prompt += f"- Tổng số gói tin: {len(packets)}\n"
+        
+        # Phân loại gói tin theo giao thức
+        protocols = {}
+        for packet in packets:
+            proto = getattr(packet, 'protocol', 'Unknown')
+            protocols[proto] = protocols.get(proto, 0) + 1
+        
+        prompt += "\n## Phân bố giao thức\n"
+        for proto, count in protocols.items():
+            prompt += f"- {proto}: {count} gói tin\n"
+        
+        # Thêm thông tin chi tiết về một số gói tin (giới hạn để tránh prompt quá dài)
+        prompt += "\n## Chi tiết các gói tin mẫu\n"
+        sample_count = min(10, len(packets))  # Lấy tối đa 10 gói tin
+        
+        for i, packet in enumerate(packets[:sample_count]):
+            prompt += f"\n### Gói tin #{i+1}\n"
+            
+            # Thông tin cơ bản về gói
+            for attr in ['protocol', 'src_ip', 'dst_ip', 'src_port', 'dst_port', 'timestamp', 'length']:
+                if hasattr(packet, attr):
+                    prompt += f"- {attr}: {getattr(packet, attr)}\n"
+            
+            # Thông tin chi tiết cho từng loại gói
+            if hasattr(packet, 'protocol'):
+                if packet.protocol == 'TCP':
+                    # Thông tin TCP flags
+                    if hasattr(packet, 'flags'):
+                        prompt += f"- TCP flags: {packet.flags}\n"
+                    # Thử truy cập các phương thức cụ thể nếu có
+                    for method in ['is_syn', 'is_ack', 'is_rst', 'is_fin']:
+                        if hasattr(packet, method) and callable(getattr(packet, method)):
+                            prompt += f"- {method}: {getattr(packet, method)()}\n"
+                
+                elif packet.protocol == 'ICMP':
+                    # Thông tin ICMP
+                    for attr in ['icmp_type', 'icmp_code']:
+                        if hasattr(packet, attr):
+                            prompt += f"- {attr}: {getattr(packet, attr)}\n"
+                    # Thử truy cập các phương thức cụ thể
+                    for method in ['is_echo_request', 'is_echo_reply']:
+                        if hasattr(packet, method) and callable(getattr(packet, method)):
+                            prompt += f"- {method}: {getattr(packet, method)()}\n"
+                
+                elif packet.protocol == 'ARP':
+                    # Thông tin ARP
+                    for attr in ['src_mac', 'dst_mac', 'sender_ip', 'target_ip']:
+                        if hasattr(packet, attr):
+                            prompt += f"- {attr}: {getattr(packet, attr)}\n"
+                    # Thử phương thức
+                    for method in ['is_request', 'is_reply']:
+                        if hasattr(packet, method) and callable(getattr(packet, method)):
+                            prompt += f"- {method}: {getattr(packet, method)()}\n"
+                
+                elif packet.protocol == 'UDP':
+                    # Thông tin UDP
+                    for attr in ['length', 'checksum']:
+                        if hasattr(packet, attr):
+                            prompt += f"- {attr}: {getattr(packet, attr)}\n"
+        
+        if len(packets) > sample_count:
+            prompt += f"\n*...và {len(packets) - sample_count} gói tin khác...*\n"
+        
+        # Thêm yêu cầu phân tích cụ thể
+        prompt += """
+        \n## Yêu cầu phân tích
+        
+        Dựa trên dữ liệu gói tin trên, hãy cung cấp:
+        
+        1. Phân tích tổng quan về lưu lượng mạng
+        2. Các dấu hiệu tấn công hoặc hoạt động bất thường
+        3. Đề xuất các use case phân tích mới để phát hiện các loại tấn công có thể xảy ra trong môi trường mạng
+        4. Mức độ tin cậy của phân tích (0-1)
+        5. Khuyến nghị bảo mật cụ thể
+        
+        Hãy cung cấp phân tích chi tiết và chuyên sâu dựa trên kiến thức của chuyên gia mạng.
+        """
+        
+        return prompt
+    
+    def analyze_osi_raw_packets(self, packets: List, custom_prompt: str = None) -> Dict[str, Any]:
+        """
+        Phân tích danh sách gói tin thô theo mô hình OSI.
+        
+        Args:
+            packets: Danh sách các gói tin thô cần phân tích
+            custom_prompt: Prompt tùy chỉnh. Nếu None, sẽ dùng prompt mặc định
+            
+        Returns:
+            Kết quả phân tích theo mô hình OSI
+        """
+        if not packets:
+            return {"analysis": "Không có gói tin nào để phân tích theo mô hình OSI."}
+            
+        # Sử dụng osi_analyzer để phân tích
+        return self.osi_analyzer.analyze_raw_packets(packets, custom_prompt)

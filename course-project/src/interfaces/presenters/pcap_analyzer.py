@@ -102,35 +102,30 @@ class PCAPAnalyzer:
         self.latest_pcap_file = file_path
 
         try:
-            # Tải các gói tin mà không thực hiện phân tích
+            # Tải các gói tin thô trực tiếp mà không thực hiện phân tích
             packets = self.controller.analyze_packet_use_case.packet_repository.load_pcap_file(file_path)
             
-            # Sử dụng phương thức phân tích gói tin thô từ SmolAgent
-            if "osi" in custom_prompt.lower() if custom_prompt else False:
-                # Nếu prompt có chứa "osi", sử dụng phân tích theo mô hình OSI
-                from src.interfaces.gateways.osi_analyzer import OSILayerAnalyzer
-                # Truy cập smolagent_gateway từ controller thay vì từ analyze_packet_use_case
-                smolagent_gateway = self.controller.smolagent_gateway
-                if hasattr(smolagent_gateway, 'manager_agent'):
-                    manager_agent = smolagent_gateway.manager_agent
-                    osi_analyzer = OSILayerAnalyzer(manager_agent)
-                    result = osi_analyzer.analyze_raw_packets(packets, custom_prompt)
-                else:
-                    # Nếu không có manager_agent, sử dụng phương thức trực tiếp
-                    result = smolagent_gateway.analyze_osi_raw_packets(packets, custom_prompt)
-                
-                if isinstance(result, dict) and "analysis" in result:
-                    return result["analysis"]
-                return str(result)
+            # Tạo instance SmolagentGateway nếu chưa có
+            from src.interfaces.gateways.smolagent_gateway import SmolagentGateway
+            smolagent_gateway = getattr(self.controller, 'smolagent_gateway', None)
+            if not smolagent_gateway:
+                smolagent_gateway = SmolagentGateway()
+            
+            # Kiểm tra từ khóa trong prompt để quyết định loại phân tích
+            if custom_prompt and ("osi" in custom_prompt.lower() or "mô hình osi" in custom_prompt.lower()):
+                # Sử dụng phương thức phân tích theo mô hình OSI
+                result = smolagent_gateway.analyze_osi_raw_packets(packets, custom_prompt)
             else:
-                # Sử dụng phân tích gói tin thông thường
-                # Truy cập smolagent_gateway từ controller thay vì từ analyze_packet_use_case
-                smolagent_gateway = self.controller.smolagent_gateway
+                # Sử dụng phương thức phân tích thông thường
                 result = smolagent_gateway.analyze_raw_packets(packets, custom_prompt)
-                if isinstance(result, dict) and "analysis" in result:
-                    return result["analysis"]
+            
+            # Xử lý kết quả
+            if isinstance(result, dict) and "analysis" in result:
+                return result["analysis"]
+            elif isinstance(result, str):
+                return result
+            else:
                 return str(result)
-
         except Exception as e:
             # Xử lý lỗi
             error_message = f"## Lỗi khi phân tích file\n\n"

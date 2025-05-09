@@ -140,8 +140,16 @@ class ChatHandler:
         Hãy đưa ra kết luận và khuyến nghị bảo mật cụ thể dựa trên phân tích.
         """
         
-        # Gọi phương thức phân tích gói tin thô với prompt tùy chỉnh
-        return self.analyze_raw_packets(tcp_packets, custom_prompt)
+        # Sử dụng phương thức analyze_raw_packets từ SmolagentGateway thay vì của lớp này
+        try:
+            result = self.smolagent_gateway.analyze_raw_packets(tcp_packets, custom_prompt)
+            
+            # Kiểm tra và trả về kết quả phân tích
+            if isinstance(result, dict) and "analysis" in result:
+                return result["analysis"]
+            return str(result)
+        except Exception as e:
+            return f"Lỗi khi phân tích cờ TCP: {str(e)}"
     
     def analyze_raw_packets(self, packets: List, custom_prompt: str = None) -> str:
         """
@@ -155,7 +163,7 @@ class ChatHandler:
             Phân tích từ AI dưới dạng chuỗi văn bản
         """
         try:
-            # Gọi smolagent_gateway để phân tích
+            # Sử dụng phương thức analyze_raw_packets mới từ smolagent_gateway
             analysis_result = self.smolagent_gateway.analyze_raw_packets(packets, custom_prompt)
             
             # Kiểm tra kết quả và trả về phân tích
@@ -181,10 +189,31 @@ class ChatHandler:
             Phân tích theo mô hình OSI dưới dạng chuỗi văn bản
         """
         try:
-            # Gọi phân tích OSI với danh sách gói tin thô
-            osi_analysis = self.smolagent_gateway.osi_analyzer.analyze_raw_packets(packets, custom_prompt)
+            # Nếu không có prompt tùy chỉnh, tạo prompt tập trung vào phân tích OSI
+            if not custom_prompt:
+                custom_prompt = """
+                Là một chuyên gia phân tích mạng, hãy phân tích chi tiết các gói tin dưới đây theo mô hình OSI (7 tầng).
+                
+                Phân tích từng tầng:
+                1. Tầng vật lý (Physical Layer)
+                2. Tầng liên kết dữ liệu (Data Link Layer) - MAC, ARP, v.v.
+                3. Tầng mạng (Network Layer) - IP, ICMP, định tuyến, v.v.
+                4. Tầng giao vận (Transport Layer) - TCP, UDP, cờ TCP, port, v.v.
+                5. Tầng phiên (Session Layer)
+                6. Tầng trình diễn (Presentation Layer)
+                7. Tầng ứng dụng (Application Layer) - HTTP, DNS, v.v.
+                
+                Tập trung vào:
+                - Dấu hiệu tấn công hoặc bất thường ở mỗi tầng
+                - Vấn đề hiệu suất hoặc kết nối
+                - Các use case phân tích mới có thể thêm vào hệ thống
+                - Các biện pháp bảo mật và giảm thiểu rủi ro
+                """
             
-            # Kiểm tra kết quả và trả về phân tích
+            # Sử dụng phương thức analyze_raw_packets với prompt tùy chỉnh cho OSI
+            osi_analysis = self.smolagent_gateway.analyze_raw_packets(packets, custom_prompt)
+            
+            # Xử lý kết quả từ SmolagentGateway
             if isinstance(osi_analysis, dict) and "analysis" in osi_analysis:
                 return osi_analysis["analysis"]
             elif isinstance(osi_analysis, str):

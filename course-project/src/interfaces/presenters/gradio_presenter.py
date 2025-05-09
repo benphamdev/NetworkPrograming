@@ -363,32 +363,7 @@ class GradioPresenter:
                 with gr.Row():
                     stats_chart = gr.Plot(label="Phân bố giao thức")
             
-            # Tab phân tích tùy chỉnh với prompt cho AI
-            with gr.Tab("Phân tích tùy chỉnh"):
-                with gr.Row():
-                    with gr.Column(scale=1):
-                        custom_pcap_file = gr.File(label="Tải lên file PCAP")
-                        custom_prompt = gr.Textbox(
-                            label="Prompt tùy chỉnh cho AI",
-                            placeholder="Nhập prompt tùy chỉnh để hướng dẫn AI phân tích...",
-                            lines=5
-                        )
-                        custom_analyze_btn = gr.Button("Phân tích tùy chỉnh", variant="primary")
-                    
-                    with gr.Column(scale=2):
-                        custom_file_info = gr.Markdown("Tải lên file PCAP để bắt đầu phân tích...")
-                        custom_analysis_result = gr.Markdown("Kết quả phân tích sẽ hiển thị ở đây...")
-            
-            # Hàm cập nhật thông tin file
-            def update_file_info(file):
-                if file and isinstance(file, str):
-                    file_info = f"File đang phân tích: **{os.path.basename(file)}**"
-                    return file_info, file_info
-                elif file and hasattr(file, 'name'):
-                    file_info = f"File đang phân tích: **{os.path.basename(file.name)}**"
-                    return file_info, file_info
-                return "Chưa có file nào được tải lên", "File đang phân tích: *Chưa có file*"
-            
+        
             # Kết nối các xử lý sự kiện - cập nhật tất cả các tab khi nhấn phân tích
             def analyze_and_update_all_tabs(pcap_file):
                 """Phân tích file PCAP và cập nhật tất cả các tab cùng một lúc."""
@@ -434,13 +409,6 @@ class GradioPresenter:
                     # Tab Phân tích AI chi tiết
                     ai_analysis_detail, tcp_flags_chart, tcp_attack_chart
                 ]
-            )
-            
-            # Cập nhật thông tin file ngay khi tải lên
-            pcap_file.change(
-                fn=update_file_info,
-                inputs=[pcap_file],
-                outputs=[current_file_display, current_chat_file]
             )
             
             # Cập nhật chatbox khi tải file lên
@@ -513,18 +481,6 @@ class GradioPresenter:
                 outputs=[stats_summary, stats_chart]
             )
             
-            # Kết nối phân tích tùy chỉnh
-            custom_analyze_btn.click(
-                fn=self.analyze_raw_packets,
-                inputs=[custom_pcap_file, custom_prompt],
-                outputs=[custom_analysis_result]
-            )
-            
-            # Cập nhật thông tin file tùy chỉnh
-            custom_pcap_file.change(
-                fn=lambda file: f"File đang phân tích: **{os.path.basename(file.name) if hasattr(file, 'name') else file}**" if file else "Tải lên file PCAP để bắt đầu phân tích...",
-                inputs=[custom_pcap_file],
-                outputs=[custom_file_info]
-            )        
+
         # Khởi chạy giao diện
         interface.launch(share=False)
