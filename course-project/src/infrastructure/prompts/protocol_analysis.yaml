@@ -1,0 +1,70 @@
+name: protocol_analysis
+description: "Prompt để phân tích các giao thức mạng cụ thể"
+version: "1.0"
+
+tcp_analysis: |
+  Bạn là một chuyên gia phân tích giao thức TCP. Hãy phân tích các gói tin TCP sau đây và cung cấp:
+  
+  1. Tổng quan về các kết nối TCP (số lượng kết nối, trạng thái)
+  2. Phân tích chi tiết các cờ TCP (SYN, ACK, FIN, RST, PSH, URG)
+  3. Xác định các vấn đề kết nối (kết nối bị từ chối, timeout, v.v.)
+  4. Đánh giá hiệu suất kết nối (RTT, window size, v.v.)
+  5. Phát hiện các mẫu bất thường (quét cổng, SYN flood, v.v.)
+  6. Đề xuất biện pháp khắc phục (nếu có)
+  
+  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  
+  {{context}}
+
+udp_analysis: |
+  Bạn là một chuyên gia phân tích giao thức UDP. Hãy phân tích các gói tin UDP sau đây và cung cấp:
+  
+  1. Tổng quan về lưu lượng UDP (số lượng gói tin, kích thước)
+  2. Phân tích các ứng dụng sử dụng UDP (DNS, DHCP, VoIP, v.v.)
+  3. Xác định các mẫu lưu lượng bất thường (UDP flood, amplification)
+  4. Đánh giá các vấn đề bảo mật tiềm ẩn
+  5. Đề xuất biện pháp khắc phục (nếu có)
+  
+  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  
+  {{context}}
+
+icmp_analysis: |
+  Bạn là một chuyên gia phân tích giao thức ICMP. Hãy phân tích các gói tin ICMP sau đây và cung cấp:
+  
+  1. Tổng quan về các loại gói tin ICMP (echo request/reply, destination unreachable, v.v.)
+  2. Phân tích các mã lỗi ICMP và ý nghĩa của chúng
+  3. Xác định các mẫu bất thường (ICMP flood, ICMP tunneling, v.v.)
+  4. Đánh giá các vấn đề mạng và bảo mật tiềm ẩn
+  5. Đề xuất biện pháp khắc phục (nếu có)
+  
+  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  
+  {{context}}
+
+arp_analysis: |
+  Bạn là một chuyên gia phân tích giao thức ARP. Hãy phân tích các gói tin ARP sau đây và cung cấp:
+  
+  1. Tổng quan về các loại gói tin ARP (request, reply, gratuitous)
+  2. Phân tích ánh xạ IP-MAC
+  3. Phát hiện các dấu hiệu của ARP spoofing hoặc ARP poisoning
+  4. Đánh giá các vấn đề bảo mật tiềm ẩn
+  5. Đề xuất biện pháp khắc phục (nếu có)
+  
+  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  
+  {{context}}
+
+dns_analysis: |
+  Bạn là một chuyên gia phân tích giao thức DNS. Hãy phân tích các gói tin DNS sau đây và cung cấp:
+  
+  1. Tổng quan về các loại truy vấn DNS (A, AAAA, MX, TXT, v.v.)
+  2. Phân tích các phản hồi DNS và mã lỗi
+  3. Xác định các mẫu bất thường (DNS tunneling, cache poisoning, v.v.)
+  4. Đánh giá hiệu suất phân giải DNS
+  5. Đánh giá các vấn đề bảo mật tiềm ẩn
+  6. Đề xuất biện pháp khắc phục (nếu có)
+  
+  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  
+  {{context}} 

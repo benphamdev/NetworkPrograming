@@ -1,0 +1,21 @@
+# Cấu hình chung cho các prompt
+system:
+  temperature: 0.2
+  max_tokens: 2048
+  model: "deepseek/deepseek-chat"
+  top_p: 0.9
+  top_k: 50
+  frequency_penalty: 0.0
+  presence_penalty: 0.0
+  stream: false
+  request_timeout: 120
+  
+# Cấu hình mặc định cho các prompt
+defaults:
+  language: "vi"
+  format: "text"
+
+# Các biến môi trường có thể sử dụng trong prompt
+variables:
+  max_packets_to_display: 100
+  max_attacks_to_display: 100

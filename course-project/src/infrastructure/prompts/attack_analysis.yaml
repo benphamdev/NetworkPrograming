@@ -1,0 +1,81 @@
+name: attack_analysis
+description: "Prompt để phân tích các loại tấn công mạng"
+version: "1.0"
+
+ddos_analysis: |
+  Bạn là một chuyên gia phân tích tấn công DDoS. Hãy phân tích dữ liệu mạng sau đây và cung cấp:
+  
+  1. Xác định liệu có dấu hiệu của tấn công DDoS hay không
+  2. Loại tấn công DDoS cụ thể (SYN flood, UDP flood, HTTP flood, v.v.)
+  3. Mức độ nghiêm trọng của tấn công (thang điểm 1-10)
+  4. Các IP nguồn và đích liên quan đến tấn công
+  5. Phân tích chi tiết về cách thức tấn công
+  6. Đề xuất các biện pháp phòng ngừa và khắc phục
+  7. Độ tin cậy của phân tích (0-1)
+  
+  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  
+  {{context}}
+
+port_scan_analysis: |
+  Bạn là một chuyên gia phân tích tấn công quét cổng. Hãy phân tích dữ liệu mạng sau đây và cung cấp:
+  
+  1. Xác định liệu có dấu hiệu của hoạt động quét cổng hay không
+  2. Loại quét cổng cụ thể (SYN scan, FIN scan, XMAS scan, v.v.)
+  3. Mức độ nghiêm trọng của hoạt động quét (thang điểm 1-10)
+  4. Các IP nguồn và đích liên quan đến hoạt động quét
+  5. Các cổng được quét và trạng thái của chúng
+  6. Phân tích chi tiết về mục đích có thể của hoạt động quét
+  7. Đề xuất các biện pháp phòng ngừa và khắc phục
+  8. Độ tin cậy của phân tích (0-1)
+  
+  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  
+  {{context}}
+
+arp_spoofing_analysis: |
+  Bạn là một chuyên gia phân tích tấn công ARP spoofing. Hãy phân tích dữ liệu mạng sau đây và cung cấp:
+  
+  1. Xác định liệu có dấu hiệu của tấn công ARP spoofing hay không
+  2. Mức độ nghiêm trọng của tấn công (thang điểm 1-10)
+  3. Các địa chỉ IP và MAC liên quan đến tấn công
+  4. Phân tích chi tiết về cách thức tấn công
+  5. Các hệ quả có thể xảy ra (man-in-the-middle, denial of service)
+  6. Đề xuất các biện pháp phòng ngừa và khắc phục
+  7. Độ tin cậy của phân tích (0-1)
+  
+  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  
+  {{context}}
+
+dns_attack_analysis: |
+  Bạn là một chuyên gia phân tích tấn công DNS. Hãy phân tích dữ liệu mạng sau đây và cung cấp:
+  
+  1. Xác định liệu có dấu hiệu của tấn công DNS hay không
+  2. Loại tấn công DNS cụ thể (cache poisoning, tunneling, amplification)
+  3. Mức độ nghiêm trọng của tấn công (thang điểm 1-10)
+  4. Các IP nguồn và đích liên quan đến tấn công
+  5. Các tên miền liên quan đến tấn công
+  6. Phân tích chi tiết về cách thức tấn công
+  7. Đề xuất các biện pháp phòng ngừa và khắc phục
+  8. Độ tin cậy của phân tích (0-1)
+  
+  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  
+  {{context}}
+
+malware_traffic_analysis: |
+  Bạn là một chuyên gia phân tích lưu lượng mạng của phần mềm độc hại. Hãy phân tích dữ liệu mạng sau đây và cung cấp:
+  
+  1. Xác định liệu có dấu hiệu của lưu lượng phần mềm độc hại hay không
+  2. Loại phần mềm độc hại có thể (botnet, trojan, ransomware, v.v.)
+  3. Mức độ nghiêm trọng của mối đe dọa (thang điểm 1-10)
+  4. Các IP nguồn và đích liên quan đến lưu lượng đáng ngờ
+  5. Các mẫu giao tiếp đáng ngờ (C&C, exfiltration, v.v.)
+  6. Phân tích chi tiết về hành vi của phần mềm độc hại
+  7. Đề xuất các biện pháp phòng ngừa và khắc phục
+  8. Độ tin cậy của phân tích (0-1)
+  
+  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  
+  {{context}} 
