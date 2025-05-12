@@ -39,7 +39,7 @@ prompt: |
   {{context}}
 
 osi_analysis: |
-  Bạn là một chuyên gia phân tích mạng và bảo mật. Hãy phân tích chi tiết các gói tin mạng sau đây theo mô hình OSI 7 tầng:
+  Hãy phân tích lưu lượng mạng theo 7 tầng của mô hình OSI, tập trung vào các vấn đề kết nối và dấu hiệu tấn công:
   
   1. Phân tích từng tầng trong mô hình OSI:
      - Tầng 1 (Physical): 
@@ -64,12 +64,23 @@ osi_analysis: |
        * Đánh giá hiệu suất kết nối (RTT, window size)
        * Phân tích các cờ TCP và sequence number
        * Xác định các vấn đề như kết nối bị từ chối, timeout
-    
-     - Tầng 5-7 (Session, Presentation, Application): 
-       * Phân tích nội dung ứng dụng trong gói tin
-       * Xác định các protocol ứng dụng (HTTP, DNS, SMB, v.v.)
-       * Đánh giá hiệu suất ứng dụng và mã lỗi
-       * Phát hiện các dấu hiệu tấn công tầng ứng dụng
+  
+     - Tầng 5 (Session Layer):
+       * Phân tích quá trình thiết lập, duy trì và đóng phiên kết nối
+       * Xác định các vấn đề về đồng bộ hóa phiên (session synchronization)
+       * Phát hiện lỗi quản lý phiên, phiên treo (hung sessions) và timeout
+       * Đánh giá cơ chế kiểm soát hội thoại (dialog control) và chuyển tiếp token
+  
+     - Tầng 6 (Presentation Layer):
+       * Phân tích các vấn đề mã hóa và giải mã dữ liệu
+       * Đánh giá vấn đề về SSL/TLS: phiên bản, cipher suites, chứng chỉ
+       * Xác định các lỗi chuyển đổi định dạng dữ liệu và mã hóa ký tự
+       * Phân tích quá trình nén/giải nén và mã hóa/giải mã dữ liệu
+
+     - Tầng 7 (Application Layer)
+       * Phân tích các giao thức ứng dụng: HTTP, DNS, DHCP, FTP...
+       * Xác định các vấn đề ứng dụng, timeout, và lỗi phản hồi
+       * Phát hiện tấn công: DNS cache poisoning, HTTP flood, DHCP starvation
   
   2. Xác định các vấn đề tại mỗi tầng:
      - Ghi rõ các gói tin bất thường

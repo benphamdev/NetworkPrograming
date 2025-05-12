@@ -186,8 +186,8 @@ course-project/
   │   │   ├── gateways/    # Các lớp tương tác với dịch vụ bên ngoài
   │   │   └── presenters/  # Các lớp xử lý hiển thị kết quả
   │   ├── infrastructure/  # Triển khai cụ thể cho các interface
+  │   │   ├── prompts/     # Nơi lưu trữ prompt và config model
   │   │   └── repositories/# Triển khai các repository
-    
   │   └── utils/           # Tiện ích chung
   ├── visualizations/      # Kết quả trực quan hóa
   ├── .env                 # File cấu hình biến môi trường
