@@ -192,3 +192,5 @@ visualizations
 data/packets
 
 __pycache__
+
+*.log

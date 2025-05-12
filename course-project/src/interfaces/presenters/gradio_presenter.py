@@ -263,6 +263,52 @@ class GradioPresenter:
                 with gr.Row():
                     tcp_viz = gr.Plot(label="Phân tích TCP")
             
+            # Tab Dashboard cho Network Engineer
+            with gr.Tab("Dashboard Network Engineer"):
+                gr.Markdown("## Dashboard giám sát mạng và phân tích bảo mật")
+                
+                # Phần I: Giám sát Trạng thái và Kết nối Mạng
+                gr.Markdown("### I. Giám sát Trạng thái và Kết nối Mạng")
+                
+                with gr.Row():
+                    with gr.Column():
+                        device_status_chart = gr.Plot(label="Trạng thái Thiết bị")
+                    with gr.Column():
+                        link_quality_chart = gr.Plot(label="Chất lượng Đường truyền")
+                
+                # Phần II: Phân tích Lưu lượng và Phát hiện Bất thường
+                gr.Markdown("### II. Phân tích Lưu lượng và Phát hiện Bất thường")
+                
+                with gr.Accordion("Phát hiện tấn công ARP", open=False):
+                    arp_attack_chart = gr.Plot(label="Dấu hiệu tấn công ARP")
+                
+                with gr.Accordion("Phát hiện bất thường ICMP", open=False):
+                    icmp_anomaly_chart = gr.Plot(label="Dấu hiệu bất thường ICMP")
+                
+                with gr.Accordion("Phát hiện tấn công DHCP", open=False):
+                    dhcp_attack_chart = gr.Plot(label="Dấu hiệu tấn công DHCP")
+                
+                with gr.Accordion("Phát hiện tấn công DNS", open=False):
+                    dns_attack_chart = gr.Plot(label="Dấu hiệu tấn công DNS")
+                
+                with gr.Row():
+                    with gr.Column():
+                        with gr.Row():
+                            top_n_slider = gr.Slider(minimum=5, maximum=20, step=1, value=10, label="Số lượng Top N")
+                            update_top_n_btn = gr.Button("Cập nhật Top N")
+                    with gr.Column():
+                        display_options = gr.CheckboxGroup(
+                            ["Hiển thị nguồn", "Hiển thị đích", "Hiển thị cặp nguồn-đích", "Hiển thị giao thức"],
+                            value=["Hiển thị nguồn", "Hiển thị đích"],
+                            label="Tùy chọn hiển thị"
+                        )
+                
+                with gr.Row():
+                    top_talkers_chart = gr.Plot(label="Top N Talkers/Chatters")
+                
+                with gr.Row():
+                    refresh_dashboard_btn = gr.Button("Làm mới Dashboard", variant="primary")
+            
             # Tab ChatBox Tư vấn rủi ro mạng
             with gr.Tab("ChatBox Tư Vấn"):
                 with gr.Row():
@@ -373,7 +419,26 @@ class GradioPresenter:
                     stats_chart = gr.Plot(label="Phân bố giao thức")
             
         
-            # Kết nối các xử lý sự kiện - cập nhật tất cả các tab khi nhấn phân tích
+            # Định nghĩa hàm cập nhật dashboard
+            def update_dashboard(pcap_file, top_n, display_options):
+                """Cập nhật tất cả các biểu đồ trong dashboard."""
+                # Nếu không có file PCAP, trả về biểu đồ mẫu
+                if not pcap_file:
+                    empty_chart = self.chart_creator._create_empty_chart("Chưa có dữ liệu. Vui lòng tải lên file PCAP.")
+                    return empty_chart, empty_chart, empty_chart, empty_chart, empty_chart, empty_chart, empty_chart
+                
+                # Tạo các biểu đồ từ dữ liệu phân tích
+                device_status = self.chart_creator.create_device_status_chart(self.base_presenter.latest_results)
+                link_quality = self.chart_creator.create_link_quality_chart(self.base_presenter.latest_results)
+                arp_attack = self.chart_creator.create_arp_attack_chart(self.base_presenter.latest_results)
+                icmp_anomaly = self.chart_creator.create_icmp_anomaly_chart(self.base_presenter.latest_results)
+                dhcp_attack = self.chart_creator.create_dhcp_attack_chart(self.base_presenter.latest_results)
+                dns_attack = self.chart_creator.create_dns_attack_chart(self.base_presenter.latest_results)
+                top_talkers = self.chart_creator.create_top_talkers_chart(self.base_presenter.latest_results, top_n)
+                
+                return device_status, link_quality, arp_attack, icmp_anomaly, dhcp_attack, dns_attack, top_talkers
+            
+            # Sửa hàm analyze_and_update_all_tabs để cập nhật cả dashboard
             def analyze_and_update_all_tabs(pcap_file):
                 """Phân tích file PCAP và cập nhật tất cả các tab cùng một lúc."""
                 # Phân tích PCAP chính
@@ -401,8 +466,13 @@ class GradioPresenter:
                     file_info = "Chưa có file nào được tải lên"
                     chat_file_info = "File đang phân tích: *Chưa có file*"
                 
+                # Tạo dữ liệu cho Dashboard
+                dashboard_results = update_dashboard(pcap_file, 10, ["Hiển thị nguồn", "Hiển thị đích"])
+                
                 # Trả về kết quả cho tất cả các tab
-                return (*main_results, file_info, chat_file_info, chat_msg, tcp_analysis, tcp_flags, tcp_attack)
+                return (*main_results, file_info, chat_file_info, chat_msg, 
+                        tcp_analysis, tcp_flags, tcp_attack, 
+                        *dashboard_results)
             
             # Kết nối sự kiện nhấn phân tích với tất cả các đầu ra cần cập nhật
             analyze_btn.click(
@@ -416,7 +486,10 @@ class GradioPresenter:
                     # Tab ChatBox Tư Vấn
                     chat_history,
                     # Tab Phân tích AI chi tiết
-                    ai_analysis_detail, tcp_flags_chart, tcp_attack_chart
+                    ai_analysis_detail, tcp_flags_chart, tcp_attack_chart,
+                    # Tab Dashboard Network Engineer
+                    device_status_chart, link_quality_chart, arp_attack_chart, 
+                    icmp_anomaly_chart, dhcp_attack_chart, dns_attack_chart, top_talkers_chart
                 ]
             )
             
@@ -490,6 +563,23 @@ class GradioPresenter:
                 outputs=[stats_summary, stats_chart]
             )
             
+            # Kết nối sự kiện làm mới dashboard
+            refresh_dashboard_btn.click(
+                fn=update_dashboard,
+                inputs=[pcap_file, top_n_slider, display_options],
+                outputs=[
+                    device_status_chart, link_quality_chart, arp_attack_chart,
+                    icmp_anomaly_chart, dhcp_attack_chart, dns_attack_chart, top_talkers_chart
+                ]
+            )
+            
+            # Kết nối sự kiện cập nhật Top N
+            update_top_n_btn.click(
+                fn=lambda pcap_file, top_n: self.chart_creator.create_top_talkers_chart(
+                    self.base_presenter.latest_results, top_n) if self.base_presenter.latest_results else self.chart_creator._create_empty_chart("Không có dữ liệu"),
+                inputs=[pcap_file, top_n_slider],
+                outputs=[top_talkers_chart]
+            )
 
         # Khởi chạy giao diện
         interface.launch(share=False)
