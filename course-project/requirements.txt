@@ -9,11 +9,10 @@ networkx>=2.7.0
 
 #AI & Agents:
 smolagents>=0.1.0
-smolagents[telemetry]>=0.1.0
-smolagents[gradio]>=0.1.0
-smolagents[litellm]>=0.1.0
+smolagents[telemetry, toolkit, gradio, litellm]>=0.1.0
 openinference-instrumentation-smolagents>=0.1.0
 arize-phoenix>=0.1.0
+arize-phoenix-otel>=0.1.0
 
 #Data Science:
 numpy>=1.20.0

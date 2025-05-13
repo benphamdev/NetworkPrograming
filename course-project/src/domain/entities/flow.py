@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Dict, Any, Optional
-from src.utils.logger import log_function_call
+
 
 
 class FlowState(Enum):
@@ -32,8 +32,8 @@ class Flow:
     byte_count: int = 0
     retransmissions: int = 0
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    @log_function_call
+
+    # @log_function_call
     def to_dict(self) -> Dict[str, Any]:
         """Convert flow to dictionary representation."""
         return {
@@ -50,17 +50,17 @@ class Flow:
             "retransmissions": self.retransmissions,
             "metadata": self.metadata
         }
-    
+
     @property
-    @log_function_call
+    # @log_function_call
     def duration(self) -> float:
         """Return flow duration in seconds."""
         if self.end_time is None:
             return 0.0
         return (self.end_time - self.start_time).total_seconds()
-    
+
     @property
-    @log_function_call
+    # @log_function_call
     def flow_id(self) -> str:
         """Generate a unique ID for this flow."""
         return f"{self.src_ip}:{self.src_port}-{self.dst_ip}:{self.dst_port}-{self.protocol}"
@@ -76,8 +76,8 @@ class TCPFlow(Flow):
     mss: int = 0
     handshake_completed: bool = False
     graceful_close: bool = False
-    
-    @log_function_call
+
+    # @log_function_call
     def to_dict(self) -> Dict[str, Any]:
         """Convert TCP flow to dictionary representation."""
         base_dict = super().to_dict()
@@ -102,8 +102,8 @@ class HTTPFlow(TCPFlow):
     content_type: str = ""
     host: str = ""
     user_agent: str = ""
-    
-    @log_function_call
+
+    # @log_function_call
     def to_dict(self) -> Dict[str, Any]:
         """Convert HTTP flow to dictionary representation."""
         base_dict = super().to_dict()
@@ -123,8 +123,8 @@ class UDPFlow(Flow):
     """UDP Flow with UDP-specific fields."""
     dns_query: bool = False
     dns_response: bool = False
-    
-    @log_function_call
+
+    # @log_function_call
     def to_dict(self) -> Dict[str, Any]:
         """Convert UDP flow to dictionary representation."""
         base_dict = super().to_dict()
@@ -140,8 +140,8 @@ class ICMPFlow(Flow):
     """ICMP Flow with ICMP-specific fields."""
     echo_requests: int = 0
     echo_replies: int = 0
-    
-    @log_function_call
+
+    # @log_function_call
     def to_dict(self) -> Dict[str, Any]:
         """Convert ICMP flow to dictionary representation."""
         base_dict = super().to_dict()

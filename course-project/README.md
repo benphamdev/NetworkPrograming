@@ -6,36 +6,40 @@ tích các cuộc tấn công mạng.
 ## Tính năng chính
 
 - **Debug vấn đề kết nối mạng**:
-    - Phân tích tại sao các thiết bị không ping được đến nhau
-    - Xác định chính xác thành phần mạng nào đang gặp trục trặc (Router, Switch, Firewall, DNS, v.v.)
-    - Phân tích timeout, latency và retransmission
+
+  - Phân tích tại sao các thiết bị không ping được đến nhau
+  - Xác định chính xác thành phần mạng nào đang gặp trục trặc (Router, Switch, Firewall, DNS, v.v.)
+  - Phân tích timeout, latency và retransmission
 
 - **Phân tích theo mô hình OSI**:
-    - Phân tích các vấn đề ở từng tầng của mô hình OSI
-    - Tầng vật lý: Lỗi cáp, port, tín hiệu
-    - Tầng liên kết dữ liệu: Xung đột MAC, ARP poisoning, VLAN issues
-    - Tầng mạng: IP routing, ICMP, fragmentation, TTL issues
-    - Tầng giao vận: TCP handshake, RST packets, port availability
-    - Tầng ứng dụng: DNS resolution, HTTP errors, TLS issues
+
+  - Phân tích các vấn đề ở từng tầng của mô hình OSI
+  - Tầng vật lý: Lỗi cáp, port, tín hiệu
+  - Tầng liên kết dữ liệu: Xung đột MAC, ARP poisoning, VLAN issues
+  - Tầng mạng: IP routing, ICMP, fragmentation, TTL issues
+  - Tầng giao vận: TCP handshake, RST packets, port availability
+  - Tầng ứng dụng: DNS resolution, HTTP errors, TLS issues
 
 - **Phát hiện các loại tấn công mạng**:
-    - ARP: Spoofing, Poisoning, Man-in-the-Middle
-    - DHCP: Spoofing, Starvation, DOS, Rogue DHCP Server
-    - DNS: Cache Poisoning, Tunneling, Spoofing, Amplification
-    - ICMP: Ping Flooding, Tunneling, Smurf Attack
-    - TCP/IP: SYN Flood, RST Attack, Session Hijacking, Port Scanning
-    - DDoS: Reflection/Amplification, Slowloris, HTTP Flooding
+
+  - ARP: Spoofing, Poisoning, Man-in-the-Middle
+  - DHCP: Spoofing, Starvation, DOS, Rogue DHCP Server
+  - DNS: Cache Poisoning, Tunneling, Spoofing, Amplification
+  - ICMP: Ping Flooding, Tunneling, Smurf Attack
+  - TCP/IP: SYN Flood, RST Attack, Session Hijacking, Port Scanning
+  - DDoS: Reflection/Amplification, Slowloris, HTTP Flooding
 
 - **Tư vấn và đề xuất giải pháp**:
-    - Đề xuất các lệnh debug và công cụ phù hợp (tcpdump, Wireshark, netstat, ping, v.v.)
-    - Cung cấp quy trình kiểm tra có hệ thống
-    - Hướng dẫn chi tiết để khắc phục vấn đề
+
+  - Đề xuất các lệnh debug và công cụ phù hợp (tcpdump, Wireshark, netstat, ping, v.v.)
+  - Cung cấp quy trình kiểm tra có hệ thống
+  - Hướng dẫn chi tiết để khắc phục vấn đề
 
 - **Phân tích và trực quan hóa**:
-    - Phân tích file pcap
-    - Trực quan hóa luồng mạng và các cuộc tấn công
-    - Phân tích cờ TCP để xác định tình trạng kết nối
-    - Tích hợp SmolaAgent AI để phân tích chi tiết và thông minh
+  - Phân tích file pcap
+  - Trực quan hóa luồng mạng và các cuộc tấn công
+  - Phân tích cờ TCP để xác định tình trạng kết nối
+  - Tích hợp SmolaAgent AI để phân tích chi tiết và thông minh
 
 ## Cài đặt
 
@@ -85,7 +89,7 @@ Chạy giao diện web tương tác:
 python web_interface.py
 ```
 
-Truy cập giao diện web tại http://localhost:7860 trong trình duyệt của bạn.
+Truy cập giao diện web tại <http://localhost:7860> trong trình duyệt của bạn.
 
 Giao diện web bao gồm các tab:
 
@@ -133,6 +137,14 @@ python main.py attacks --hours 24
 python packet_analyzer_with_smolagent.py path/to/your/file.pcap
 ```
 
+#### Chạy server Phoenix
+
+Nếu bạn muốn chạy server Phoenix để tích hợp với các ứng dụng khác hoặc để phát triển, bạn có thể sử dụng lệnh sau:
+
+```bash
+python -m phoenix.server.main serve
+```
+
 ## Cách sử dụng công cụ cho Network Engineer
 
 ### Kịch bản 1: Debug vấn đề kết nối giữa các thiết bị
@@ -169,11 +181,11 @@ kiểm thử. Kiến trúc hiện tại tuân theo các nguyên tắc:
 Gần đây, chúng tôi đã thực hiện cải tiến kiến trúc để modularize hệ thống:
 
 - **Modularization của GradioPresenter**: Chia nhỏ thành các module có trách nhiệm đơn lẻ
-    - Chat Interface: Xử lý tương tác chat với người dùng
-    - Dashboard Presenter: Quản lý trực quan hóa dashboard
-    - Report Manager: Xử lý việc tạo và tải xuống báo cáo
-    - UI Layout Creator: Tạo các thành phần UI và layout
-    - UI Event Handlers: Quản lý kết nối sự kiện giữa các thành phần UI
+  - Chat Interface: Xử lý tương tác chat với người dùng
+  - Dashboard Presenter: Quản lý trực quan hóa dashboard
+  - Report Manager: Xử lý việc tạo và tải xuống báo cáo
+  - UI Layout Creator: Tạo các thành phần UI và layout
+  - UI Event Handlers: Quản lý kết nối sự kiện giữa các thành phần UI
 
 ## Hệ thống Prompt YAML
 
@@ -183,6 +195,39 @@ Dự án sử dụng hệ thống Prompt YAML để tách biệt nội dung prom
 - Giúp dễ dàng quản lý và tùy chỉnh prompt mà không cần sửa đổi mã nguồn
 - Hỗ trợ các biến trong prompt (như `{{context}}`) được thay thế khi runtime
 - Cấu trúc tổ chức rõ ràng với các prompt chuyên biệt cho từng loại phân tích
+
+### Giám sát và phân tích Agent với OpenTelemetry
+
+Dự án sử dụng OpenTelemetry để giám sát và phân tích hiệu suất của các agent AI:
+
+1. **Theo dõi hiệu suất Agent**:
+
+   - Đo lường thời gian xử lý của từng agent
+   - Phát hiện các agent bị quá tải hoặc chậm
+   - Phân tích mối tương quan giữa các agent
+
+2. **Phân tích luồng dữ liệu**:
+
+   - Theo dõi luồng dữ liệu giữa các agent
+   - Phát hiện điểm nghẽn trong quá trình xử lý
+   - Tối ưu hóa luồng dữ liệu
+
+3. **Giám sát tài nguyên**:
+
+   - Theo dõi việc sử dụng bộ nhớ của các agent
+   - Phát hiện rò rỉ bộ nhớ
+   - Tối ưu hóa việc sử dụng tài nguyên
+
+4. **Phân tích lỗi**:
+
+   - Ghi lại các lỗi xảy ra trong quá trình xử lý
+   - Phân tích nguyên nhân gây lỗi
+   - Đề xuất giải pháp khắc phục
+
+5. **Báo cáo hiệu suất**:
+   - Tạo báo cáo hiệu suất định kỳ
+   - Phân tích xu hướng hiệu suất
+   - Đề xuất cải tiến hệ thống
 
 ## Cấu trúc dự án
 
@@ -225,46 +270,52 @@ course-project/
 Tool sẽ phát hiện các loại tấn công dựa trên các dấu hiệu sau:
 
 1. **ARP Spoofing/Poisoning**:
-    - Nhiều địa chỉ MAC khác nhau cho cùng một địa chỉ IP
-    - Thông báo ARP không được yêu cầu
-    - ARP reply không phù hợp với các request đã biết
-    - Địa chỉ MAC của gateway bị thay đổi
+
+   - Nhiều địa chỉ MAC khác nhau cho cùng một địa chỉ IP
+   - Thông báo ARP không được yêu cầu
+   - ARP reply không phù hợp với các request đã biết
+   - Địa chỉ MAC của gateway bị thay đổi
 
 2. **DHCP Starvation/Spoofing**:
-    - Nhiều DHCP requests từ cùng một thiết bị với MAC khác nhau
-    - DHCP server không được ủy quyền cung cấp địa chỉ IP
-    - Cạn kiệt pool địa chỉ IP của DHCP server
+
+   - Nhiều DHCP requests từ cùng một thiết bị với MAC khác nhau
+   - DHCP server không được ủy quyền cung cấp địa chỉ IP
+   - Cạn kiệt pool địa chỉ IP của DHCP server
 
 3. **DNS Cache Poisoning/Tunneling**:
-    - Gói tin DNS quá lớn
-    - Mã hóa đáng ngờ trong truy vấn và phản hồi DNS
-    - Nhiều truy vấn DNS đến tên miền lạ
-    - Phản hồi DNS không khớp với truy vấn
+
+   - Gói tin DNS quá lớn
+   - Mã hóa đáng ngờ trong truy vấn và phản hồi DNS
+   - Nhiều truy vấn DNS đến tên miền lạ
+   - Phản hồi DNS không khớp với truy vấn
 
 4. **TCP/IP Attacks**:
-    - SYN Flood: Nhiều gói SYN không hoàn tất handshake
-    - RST Attack: Gói RST giả mạo cắt đứt kết nối
-    - Port Scanning: Truy cập đến nhiều cổng trên cùng một host
-    - Session Hijacking: Sequence number dự đoán được
+
+   - SYN Flood: Nhiều gói SYN không hoàn tất handshake
+   - RST Attack: Gói RST giả mạo cắt đứt kết nối
+   - Port Scanning: Truy cập đến nhiều cổng trên cùng một host
+   - Session Hijacking: Sequence number dự đoán được
 
 5. **DDoS Attacks**:
-    - Lưu lượng bất thường từ nhiều nguồn đến một đích
-    - Tỷ lệ cao các kết nối không hoàn chỉnh
-    - Tăng đột biến lưu lượng mạng đến các port hoặc dịch vụ cụ thể
+   - Lưu lượng bất thường từ nhiều nguồn đến một đích
+   - Tỷ lệ cao các kết nối không hoàn chỉnh
+   - Tăng đột biến lưu lượng mạng đến các port hoặc dịch vụ cụ thể
 
 ## Hướng phát triển tương lai
 
 1. **Cải thiện tính module**:
-    - Phân chia thêm phương thức phân tích phức tạp
-    - Triển khai event bus cho coupling lỏng lẻo hơn
+
+   - Phân chia thêm phương thức phân tích phức tạp
+   - Triển khai event bus cho coupling lỏng lẻo hơn
 
 2. **Bổ sung kiểm thử**:
-    - Thêm unit test toàn diện cho từng module
-    - Tạo integration test giữa các module
+
+   - Thêm unit test toàn diện cho từng module
+   - Tạo integration test giữa các module
 
 3. **Cấu hình**:
-    - Di chuyển các giá trị hard-code vào file cấu hình
-    - Triển khai dependency injection để dễ kiểm thử hơn
+   - Di chuyển các giá trị hard-code vào file cấu hình
+   - Triển khai dependency injection để dễ kiểm thử hơn
 
 ## Đóng góp
 

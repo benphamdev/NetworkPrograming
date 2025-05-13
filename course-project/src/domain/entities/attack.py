@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Dict, Any, List, Optional
-from src.utils.logger import log_function_call
+
 
 
 class AttackType(Enum):
@@ -32,8 +32,8 @@ class Attack:
     description: str = ""
     packet_count: int = 0
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    @log_function_call
+
+    # @log_function_call
     def to_dict(self) -> Dict[str, Any]:
         """Convert attack to dictionary representation."""
         return {
@@ -55,8 +55,8 @@ class SynFloodAttack(Attack):
     syn_count: int = 0
     syn_ack_count: int = 0
     unique_source_ports: int = 0
-    
-    @log_function_call
+
+    # @log_function_call
     def to_dict(self) -> Dict[str, Any]:
         """Convert SYN flood attack to dictionary representation."""
         base_dict = super().to_dict()
@@ -74,8 +74,8 @@ class ArpSpoofingAttack(Attack):
     spoofed_mac: str = ""
     real_mac: Optional[str] = None
     poisoned_hosts: int = 0
-    
-    @log_function_call
+
+    # @log_function_call
     def to_dict(self) -> Dict[str, Any]:
         """Convert ARP spoofing attack to dictionary representation."""
         base_dict = super().to_dict()
@@ -93,8 +93,8 @@ class PortScanAttack(Attack):
     scanned_ports: List[int] = field(default_factory=list)
     open_ports: List[int] = field(default_factory=list)
     scan_type: str = "SYN"  # SYN, FIN, XMAS, etc.
-    
-    @log_function_call
+
+    # @log_function_call
     def to_dict(self) -> Dict[str, Any]:
         """Convert port scan attack to dictionary representation."""
         base_dict = super().to_dict()
@@ -113,8 +113,8 @@ class IcmpFloodAttack(Attack):
     icmp_echo_requests: int = 0
     icmp_echo_replies: int = 0
     packet_rate: float = 0.0  # packets per second
-    
-    @log_function_call
+
+    # @log_function_call
     def to_dict(self) -> Dict[str, Any]:
         """Convert ICMP flood attack to dictionary representation."""
         base_dict = super().to_dict()
@@ -131,8 +131,8 @@ class RstAttack(Attack):
     """RST Attack with specific details."""
     rst_count: int = 0
     interrupted_connections: int = 0
-    
-    @log_function_call
+
+    # @log_function_call
     def to_dict(self) -> Dict[str, Any]:
         """Convert RST attack to dictionary representation."""
         base_dict = super().to_dict()
@@ -151,8 +151,8 @@ class ArpFloodingAttack(Attack):
     reply_count: int = 0
     unique_sources: int = 0  # For distributed attacks
     is_distributed: bool = False
-    
-    @log_function_call
+
+    # @log_function_call
     def to_dict(self) -> Dict[str, Any]:
         """Convert ARP flooding attack to dictionary representation."""
         base_dict = super().to_dict()

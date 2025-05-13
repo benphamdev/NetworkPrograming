@@ -7,17 +7,22 @@ import os
 from typing import Dict, Any, Optional, List
 
 from dotenv import load_dotenv
+from openinference.instrumentation.smolagents import SmolagentsInstrumentor
+from phoenix.otel import register
 from smolagents import (
     ToolCallingAgent,
     DuckDuckGoSearchTool,
     VisitWebpageTool,
-    LiteLLMModel,
+    LiteLLMModel, CodeAgent,
 )
 
 from src.infrastructure.repositories.yaml_prompt_repository import YamlPromptRepository
 from src.interfaces.gateways.osi_analyzer import OSILayerAnalyzer
 from src.interfaces.gateways.response_extractor import ResponseExtractor
 from src.use_cases.prompt_service import PromptService
+
+register()
+SmolagentsInstrumentor().instrument()
 
 
 class SmolagentGateway:
@@ -91,8 +96,8 @@ class SmolagentGateway:
         )
 
     def _initialize_agents(self):
-        """Khởi tạo các agent chuyên biệt cho phân tích mạng."""
-        # Search agent
+        """Initialize specialized agents for network analysis."""
+        # Search agent (support utility)
         self.search_agent = ToolCallingAgent(
             tools=[DuckDuckGoSearchTool(), VisitWebpageTool()],
             model=self.model,
@@ -100,55 +105,403 @@ class SmolagentGateway:
             description="This agent performs web searches to get up-to-date information about network protocols and vulnerabilities."
         )
 
-        # Packet analyzer agent
+        # Packet analyzer agent (general packet analysis agent)
         self.packet_analyzer_agent = ToolCallingAgent(
             tools=[],
             model=self.model,
             name="packet_analyzer_agent",
-            description="This agent specializes in detailed packet inspection, analyzing protocol headers, flags, and payload data to identify anomalies."
+            description="This agent specializes in detailed packet inspection, analyzing protocol headers, flags, and payload data to identify anomalies.",
+            managed_agents=[self.search_agent]
         )
 
-        # TCP agent
-        self.tcp_agent = ToolCallingAgent(
+        # LAYER 2 - DATA LINK
+        # Ethernet agent (Layer 2)
+        self.ethernet_agent = ToolCallingAgent(
             tools=[],
             model=self.model,
-            name="tcp_agent",
-            description="This agent specializes in TCP protocol analysis, focusing on handshake analysis, flags, sequence numbers, and potential TCP-specific attacks."
+            name="ethernet_agent",
+            description="This agent specializes in Ethernet frame analysis, focusing on MAC addressing, VLAN tagging, and layer 2 collisions or errors.",
+            managed_agents=[self.packet_analyzer_agent]
         )
 
-        # ARP agent
+        # ARP agent (Layer 2-3)
         self.arp_agent = ToolCallingAgent(
             tools=[],
             model=self.model,
             name="arp_agent",
-            description="This agent specializes in ARP protocol analysis, focusing on ARP spoofing detection, MAC-IP mapping conflicts, and ARP cache poisoning."
+            description="This agent specializes in ARP protocol analysis, focusing on ARP spoofing detection, MAC-IP mapping conflicts, and ARP cache poisoning.",
+            managed_agents=[self.packet_analyzer_agent]
         )
 
-        # ICMP agent
+        # LAYER 3 - NETWORK
+        # IPv4/IPv6 agent (Layer 3)
+        self.ip_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="ip_agent",
+            description="This agent specializes in IP protocol analysis, focusing on IP fragmentation, TTL issues, routing problems, and IPv4/IPv6 specific features.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # ICMP agent (Layer 3)
         self.icmp_agent = ToolCallingAgent(
             tools=[],
             model=self.model,
             name="icmp_agent",
-            description="This agent specializes in ICMP protocol analysis, focusing on unusual echo patterns, tunnel detection, and ICMP flooding."
+            description="This agent specializes in ICMP protocol analysis, focusing on unusual echo patterns, tunnel detection, and ICMP flooding.",
+            managed_agents=[self.packet_analyzer_agent]
         )
 
+        # LAYER 4 - TRANSPORT
+        # TCP agent (Layer 4)
+        self.tcp_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="tcp_agent",
+            description="This agent specializes in TCP protocol analysis, focusing on handshake analysis, flags, sequence numbers, and potential TCP-specific attacks.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # UDP agent (Layer 4)
+        self.udp_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="udp_agent",
+            description="This agent specializes in UDP protocol analysis, focusing on connectionless communication, datagram issues, and UDP-specific attacks.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # LAYER 5 - SESSION
+        # Session agent (Layer 5)
+        self.session_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="session_agent",
+            description="This agent specializes in Session layer protocols analysis, focusing on session establishment, management, and termination. Analyzes protocols like SIP, NetBIOS, RPC, and SMB.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # LAYER 6 - PRESENTATION
+        # TLS/SSL agent (Layer 6)
+        self.tls_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="tls_agent",
+            description="This agent specializes in TLS/SSL protocol analysis, focusing on handshake issues, certificate validation, cipher suites, and encryption vulnerabilities.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # LAYER 7 - APPLICATION
+        # DNS agent (Layer 7)
+        self.dns_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="dns_agent",
+            description="This agent specializes in DNS protocol analysis, focusing on DNS queries/responses, cache poisoning, tunneling, and zone transfers.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # HTTP/HTTPS agent (Layer 7)
+        self.http_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="http_agent",
+            description="This agent specializes in HTTP/HTTPS protocol analysis, focusing on request/response patterns, status codes, headers, and web-based attacks.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # ATTACK DETECTION AGENT
         # Attack detection agent
         self.attack_agent = ToolCallingAgent(
             tools=[],
             model=self.model,
             name="attack_agent",
-            description="This agent specializes in correlating evidence from multiple sources to identify attack patterns and provide threat intelligence."
+            description="This agent specializes in correlating evidence from multiple sources to identify attack patterns and provide threat intelligence.",
+            managed_agents=[self.ethernet_agent, self.arp_agent,
+                            self.ip_agent, self.icmp_agent,
+                            self.tcp_agent, self.udp_agent,
+                            self.session_agent, self.tls_agent,
+                            self.dns_agent, self.http_agent]
         )
 
-        # Manager agent - giám sát và điều phối các agent khác
-        self.manager_agent = ToolCallingAgent(
+        # MAIN COORDINATOR AGENT
+        # Manager agent - supervises and coordinates other agents
+        self.manager_agent = CodeAgent(
             tools=[],
             model=self.model,
             name="analyst_agent",
-            description="This is the main coordinator that analyzes network traffic patterns and synthesizes findings."
+            description="This is the main coordinator that analyzes network traffic patterns and synthesizes findings.",
+            managed_agents=[self.attack_agent, self.packet_analyzer_agent,
+                            self.ethernet_agent, self.arp_agent,
+                            self.ip_agent, self.icmp_agent,
+                            self.tcp_agent, self.udp_agent,
+                            self.session_agent, self.tls_agent,
+                            self.dns_agent, self.http_agent]
         )
 
-    def analyze_traffic_pattern(self, stats: Dict[str, Any]) -> Dict[str, Any]:
+    def format_result_to_markdown(self, result: Dict[str, Any]) -> str:
+        """
+        Chuyển đổi kết quả từ dict sang chuỗi markdown để hiển thị trong Gradio.
+
+        Args:
+            result: Dictionary kết quả phân tích hoặc chuỗi JSON
+
+        Returns:
+            Chuỗi markdown chứa kết quả phân tích
+        """
+        if not result:
+            return "Không có kết quả phân tích."
+
+        # Nếu đã là chuỗi, kiểm tra xem có phải JSON không
+        if isinstance(result, str):
+            # Kiểm tra và xử lý chuỗi kết quả có format đặc biệt "Out - Final answer:"
+            if "Out - Final answer:" in result:
+                full_content = result.split("Out - Final answer:")[0].strip()
+                if full_content:
+                    # Nếu có nội dung trước "Out - Final answer:", giữ lại toàn bộ nội dung
+                    return full_content
+
+            try:
+                # Thử chuyển đổi chuỗi thành JSON
+                result_dict = json.loads(result)
+                # Nếu thành công, sử dụng dict này để format
+                result = result_dict
+            except json.JSONDecodeError:
+                # Nếu không phải JSON, trả về chuỗi nguyên bản
+                return result
+
+        # Xử lý nếu analysis chứa "Out - Final answer:"
+        if "analysis" in result and isinstance(result["analysis"], str):
+            if "Out - Final answer:" in result["analysis"]:
+                # Lấy phần nội dung trước "Out - Final answer:"
+                full_content = result["analysis"].split("Out - Final answer:")[0].strip()
+                if full_content:
+                    result["analysis"] = full_content
+
+        markdown = "# Kết quả phân tích mạng\n\n"
+
+        # Xử lý trường hợp phân tích OSI Layer mới
+        if "OSI Layer Analysis" in result:
+            markdown += "## Phân tích theo mô hình OSI\n\n"
+            osi_layers = result["OSI Layer Analysis"]
+            
+            # Duyệt qua từng tầng OSI
+            for layer, layer_info in osi_layers.items():
+                markdown += f"### {layer}\n\n"
+                
+                if isinstance(layer_info, dict):
+                    # Phân tích 
+                    if "analysis" in layer_info:
+                        markdown += f"**Phân tích:** {layer_info['analysis']}\n\n"
+                    
+                    # Security issues
+                    if "security_issues" in layer_info:
+                        markdown += "**Vấn đề bảo mật:**\n\n"
+                        for issue in layer_info["security_issues"]:
+                            markdown += f"- {issue}\n"
+                        markdown += "\n"
+                    
+                    # Severity
+                    if "severity" in layer_info:
+                        markdown += f"**Mức độ nghiêm trọng:** {layer_info['severity']}/10\n\n"
+                    
+                    # Recommendations
+                    if "recommendation" in layer_info:
+                        markdown += "**Khuyến nghị:**\n\n"
+                        recommendations = layer_info["recommendation"]
+                        if isinstance(recommendations, list):
+                            for rec in recommendations:
+                                markdown += f"- {rec}\n"
+                        else:
+                            markdown += f"{recommendations}\n"
+                        markdown += "\n"
+                else:
+                    markdown += f"{layer_info}\n\n"
+            
+            # Conclusion nếu có
+            if "Conclusion" in result:
+                markdown += "## Kết luận\n\n"
+                markdown += f"{result['Conclusion']}\n\n"
+                
+            # New Detection Use Cases nếu có
+            if "New Detection Use Cases" in result:
+                markdown += "## Các trường hợp phát hiện mới\n\n"
+                use_cases = result["New Detection Use Cases"]
+                if isinstance(use_cases, list):
+                    for case in use_cases:
+                        markdown += f"- {case}\n"
+                else:
+                    markdown += f"{use_cases}\n"
+                markdown += "\n"
+                
+            return markdown
+
+        # Xử lý các trường hợp khác
+        # Thêm tóm tắt nếu có
+        if "summary" in result:
+            markdown += f"## Tóm tắt\n\n{result['summary']}\n\n"
+
+        # Thêm phân tích chung nếu có
+        if "analysis" in result:
+            markdown += f"## Phân tích chi tiết\n\n{result['analysis']}\n\n"
+
+        # Thêm phát hiện chi tiết nếu có
+        if "findings" in result:
+            markdown += f"## Phát hiện chi tiết\n\n"
+
+            findings = result["findings"]
+            if isinstance(findings, dict):
+                markdown += "| Vấn đề | Mức độ rủi ro | Mô tả | Giải pháp |\n"
+                markdown += "| --- | --- | --- | --- |\n"
+
+                for issue, details in findings.items():
+                    risk = details.get("risk", "N/A")
+                    description = details.get("description", "Không có mô tả")
+                    solution = details.get("solution", "Không có giải pháp")
+
+                    # Format tên vấn đề
+                    issue_name = issue.replace("_", " ").title()
+
+                    markdown += f"| **{issue_name}** | {risk} | {description} | {solution} |\n"
+            else:
+                markdown += f"{findings}\n\n"
+
+        # Thêm thông tin về cuộc tấn công nếu có
+        if "attack_detected" in result:
+            attack_detected = result["attack_detected"]
+            attack_type = result.get("attack_type", "Không xác định")
+            confidence = result.get("confidence", "Không xác định")
+
+            markdown += f"## Phát hiện tấn công\n\n"
+            markdown += f"- **Phát hiện tấn công:** {'Có' if attack_detected else 'Không'}\n"
+            if attack_detected:
+                markdown += f"- **Loại tấn công:** {attack_type}\n"
+                markdown += f"- **Độ tin cậy:** {confidence}\n\n"
+
+        # Thêm khuyến nghị nếu có
+        if "recommendations" in result:
+            markdown += f"## Khuyến nghị\n\n"
+
+            recommendations = result["recommendations"]
+            if isinstance(recommendations, list):
+                for i, rec in enumerate(recommendations, 1):
+                    markdown += f"{i}. {rec}\n"
+            else:
+                markdown += f"{recommendations}\n\n"
+
+        # Thêm phân tích OSI nếu có
+        if "osi_layers" in result:
+            markdown += f"## Phân tích theo mô hình OSI\n\n"
+
+            osi_layers = result["osi_layers"]
+            if isinstance(osi_layers, dict):
+                for layer, analysis in osi_layers.items():
+                    layer_name = layer.replace("_", " ").title()
+                    markdown += f"### Tầng {layer_name}\n\n"
+
+                    if isinstance(analysis, str):
+                        markdown += f"{analysis}\n\n"
+                    elif isinstance(analysis, dict):
+                        # Format dictionary phân tích tầng OSI
+                        if "issues" in analysis:
+                            markdown += "#### Vấn đề phát hiện\n\n"
+                            issues = analysis["issues"]
+                            if isinstance(issues, list):
+                                for issue in issues:
+                                    markdown += f"- {issue}\n"
+                            else:
+                                markdown += f"{issues}\n\n"
+
+                        if "recommendations" in analysis:
+                            markdown += "\n#### Đề xuất xử lý\n\n"
+                            recommendations = analysis["recommendations"]
+                            if isinstance(recommendations, list):
+                                for rec in recommendations:
+                                    markdown += f"- {rec}\n"
+                            else:
+                                markdown += f"{recommendations}\n\n"
+
+                        # Format các thông tin khác
+                        for key, value in analysis.items():
+                            if key not in ["issues", "recommendations"]:
+                                title = key.replace("_", " ").title()
+                                markdown += f"\n#### {title}\n\n"
+                                if isinstance(value, list):
+                                    for item in value:
+                                        markdown += f"- {item}\n"
+                                elif isinstance(value, dict):
+                                    markdown += "```json\n"
+                                    markdown += json.dumps(value, indent=2, ensure_ascii=False)
+                                    markdown += "\n```\n\n"
+                                else:
+                                    markdown += f"{value}\n\n"
+            else:
+                markdown += f"{osi_layers}\n\n"
+
+        # Thêm phân tích giao thức cụ thể
+        for protocol in ["tcp", "udp", "icmp", "arp", "dns", "http"]:
+            if f"{protocol}_analysis" in result:
+                protocol_upper = protocol.upper()
+                markdown += f"## Phân tích {protocol_upper}\n\n"
+
+                analysis = result[f"{protocol}_analysis"]
+                if isinstance(analysis, dict):
+                    for key, value in analysis.items():
+                        title = key.replace("_", " ").title()
+                        markdown += f"### {title}\n\n"
+
+                        if isinstance(value, list):
+                            for item in value:
+                                markdown += f"- {item}\n"
+                        elif isinstance(value, dict):
+                            markdown += "```json\n"
+                            markdown += json.dumps(value, indent=2, ensure_ascii=False)
+                            markdown += "\n```\n\n"
+                        else:
+                            markdown += f"{value}\n\n"
+                else:
+                    markdown += f"{analysis}\n\n"
+
+        # Thêm các thông tin khác
+        for key, value in result.items():
+            if key not in ["summary", "analysis", "findings", "attack_detected", "attack_type",
+                           "confidence", "recommendations", "osi_layers", "tcp_analysis",
+                           "udp_analysis", "icmp_analysis", "arp_analysis", "dns_analysis",
+                           "http_analysis", "OSI Layer Analysis", "Conclusion", "New Detection Use Cases"]:
+
+                title = key.replace("_", " ").title()
+                markdown += f"## {title}\n\n"
+
+                if isinstance(value, dict):
+                    for sub_key, sub_value in value.items():
+                        sub_title = sub_key.replace("_", " ").title()
+                        markdown += f"### {sub_title}\n\n"
+
+                        if isinstance(sub_value, list):
+                            for item in sub_value:
+                                markdown += f"- {item}\n"
+                            markdown += "\n"
+                        elif isinstance(sub_value, dict):
+                            markdown += "```json\n"
+                            markdown += json.dumps(sub_value, indent=2, ensure_ascii=False)
+                            markdown += "\n```\n\n"
+                        else:
+                            markdown += f"{sub_value}\n\n"
+                elif isinstance(value, list):
+                    if all(isinstance(item, str) for item in value):
+                        for item in value:
+                            markdown += f"- {item}\n"
+                        markdown += "\n"
+                    else:
+                        markdown += "```json\n"
+                        markdown += json.dumps(value, indent=2, ensure_ascii=False)
+                        markdown += "\n```\n\n"
+                else:
+                    markdown += f"{value}\n\n"
+
+        return markdown
+
+    def analyze_traffic_pattern(self, stats: Dict[str, Any]) -> str:
         """
         Analyze traffic patterns using smolagent.
         
@@ -156,7 +509,7 @@ class SmolagentGateway:
             stats: Dictionary of traffic statistics.
         
         Returns:
-            Analysis results from the agent.
+            Analysis results from the agent as markdown string.
         """
         # Convert stats to a prompt
         prompt = self._build_analysis_prompt(stats)
@@ -164,17 +517,21 @@ class SmolagentGateway:
         # Query the agent
         response = self.manager_agent.run(prompt)
 
-        # Parse the response (this would be more structured in a real implementation)
+        # Parse the response
         try:
             # Try to parse as JSON if possible
             results = json.loads(response)
         except (json.JSONDecodeError, TypeError):
+            # Check if the response is already formatted nicely
+            if response.startswith("# ") or response.startswith("## ") or response.startswith("TỔNG HỢP PHÂN TÍCH"):
+                return response
             # Otherwise, use the raw response
             results = {"analysis": response}
 
-        return results
+        # Chuyển đổi kết quả thành chuỗi markdown
+        return self.format_result_to_markdown(results)
 
-    def analyze_attack_indicators(self, indicators: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_attack_indicators(self, indicators: Dict[str, Any]) -> str:
         """
         Analyze potential attack indicators using smolagent.
         
@@ -182,7 +539,7 @@ class SmolagentGateway:
             indicators: Dictionary of attack indicators.
         
         Returns:
-            Assessment of attack indicators.
+            Assessment of attack indicators as markdown string.
         """
         # Convert indicators to a prompt
         prompt = self._build_attack_prompt(indicators)
@@ -192,8 +549,14 @@ class SmolagentGateway:
 
         # Process the response
         try:
+            # Try to parse as JSON if possible
             results = json.loads(response)
         except (json.JSONDecodeError, TypeError):
+            # Check if the response is already formatted nicely
+            if response.startswith("# ") or response.startswith("## ") or response.startswith("TỔNG HỢP PHÂN TÍCH"):
+                return response
+
+            # Try to extract structured data from text response
             results = {
                 "attack_detected": self.response_extractor.extract_attack_detection(response),
                 "attack_type": self.response_extractor.extract_attack_type(response),
@@ -202,7 +565,8 @@ class SmolagentGateway:
                 "analysis": response
             }
 
-        return results
+        # Chuyển đổi kết quả thành chuỗi markdown
+        return self.format_result_to_markdown(results)
 
     def _format_stats_to_context(self, stats: Dict[str, Any]) -> str:
         """
@@ -275,10 +639,10 @@ class SmolagentGateway:
     def _format_indicators_to_context(self, indicators: Dict[str, Any]) -> str:
         """
         Format attack indicators to context string for prompt.
-        
+
         Args:
             indicators: Dictionary of attack indicators.
-            
+
         Returns:
             Formatted context string.
         """
@@ -405,11 +769,21 @@ class SmolagentGateway:
         try:
             # Gọi trực tiếp đến manager_agent với câu hỏi của người dùng
             response = self.manager_agent.run(query)
-            return response
+
+            # Kiểm tra xem phản hồi có phải là JSON không
+            try:
+                json_result = json.loads(response)
+                return self.format_result_to_markdown(json_result)
+            except json.JSONDecodeError:
+                # Nếu đã định dạng tốt, trả về nguyên bản
+                if response.startswith("# ") or response.startswith("## ") or response.startswith("TỔNG HỢP PHÂN TÍCH"):
+                    return response
+                return response
+
         except Exception as e:
             return f"Xin lỗi, tôi không thể xử lý câu hỏi của bạn lúc này. Lỗi: {str(e)}"
 
-    def analyze_osi_layers(self, results: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_osi_layers(self, results: Dict[str, Any]) -> str:
         """
         Phân tích lưu lượng mạng theo các tầng của mô hình OSI sử dụng multiagent.
         
@@ -419,9 +793,17 @@ class SmolagentGateway:
         Returns:
             Kết quả phân tích theo mô hình OSI.
         """
-        return self.osi_analyzer.analyze(results)
+        osi_results = self.osi_analyzer.analyze(results)
 
-    def analyze_raw_packets(self, packets: List, custom_prompt: str = None) -> Dict[str, Any]:
+        # Nếu kết quả là chuỗi và đã định dạng tốt, trả về ngay
+        if isinstance(osi_results, str):
+            if osi_results.startswith("# ") or osi_results.startswith("## ") or osi_results.startswith(
+                    "TỔNG HỢP PHÂN TÍCH"):
+                return osi_results
+
+        return self.format_result_to_markdown(osi_results)
+
+    def analyze_raw_packets(self, packets: List, custom_prompt: str = None) -> str:
         """
         Phân tích trực tiếp danh sách gói tin thô thay vì sử dụng kết quả phân tích.
         
@@ -433,7 +815,7 @@ class SmolagentGateway:
             Kết quả phân tích từ AI
         """
         if not packets:
-            return {"analysis": "Không có gói tin nào để phân tích."}
+            return "Không có gói tin nào để phân tích."
 
         # Xây dựng prompt từ raw packets
         prompt = self._build_raw_packets_prompt(packets, custom_prompt)
@@ -441,6 +823,10 @@ class SmolagentGateway:
         # Gọi manager_agent để phân tích
         try:
             response = self.manager_agent.run(prompt)
+
+            # Kiểm tra nếu phản hồi đã được định dạng tốt
+            if response.startswith("# ") or response.startswith("## ") or response.startswith("TỔNG HỢP PHÂN TÍCH"):
+                return response
 
             # Xử lý phản hồi
             try:
@@ -450,9 +836,10 @@ class SmolagentGateway:
                 # Nếu không, sử dụng phản hồi dạng văn bản
                 result = {"analysis": response}
 
-            return result
+            # Chuyển đổi kết quả thành chuỗi markdown
+            return self.format_result_to_markdown(result)
         except Exception as e:
-            return {"analysis": f"Lỗi khi phân tích gói tin: {str(e)}"}
+            return f"Lỗi khi phân tích gói tin: {str(e)}"
 
     def _build_raw_packets_prompt(self, packets: List, custom_prompt: str = None) -> str:
         """
@@ -596,7 +983,7 @@ class SmolagentGateway:
 
         return base_prompt
 
-    def analyze_osi_raw_packets(self, packets: List, custom_prompt: str = None) -> Dict[str, Any]:
+    def analyze_osi_raw_packets(self, packets: List, custom_prompt: str = None) -> str:
         """
         Phân tích danh sách gói tin thô theo mô hình OSI.
         
@@ -608,7 +995,14 @@ class SmolagentGateway:
             Kết quả phân tích theo mô hình OSI
         """
         if not packets:
-            return {"analysis": "Không có gói tin nào để phân tích theo mô hình OSI."}
+            return "Không có gói tin nào để phân tích theo mô hình OSI."
 
         # Sử dụng osi_analyzer để phân tích
-        return self.osi_analyzer.analyze_raw_packets(packets, custom_prompt)
+        result = self.osi_analyzer.analyze_raw_packets(packets, custom_prompt)
+
+        # Kiểm tra nếu kết quả đã là chuỗi định dạng tốt
+        if isinstance(result, str):
+            if result.startswith("# ") or result.startswith("## ") or result.startswith("TỔNG HỢP PHÂN TÍCH"):
+                return result
+
+        return self.format_result_to_markdown(result)

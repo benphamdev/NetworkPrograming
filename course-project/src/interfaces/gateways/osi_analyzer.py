@@ -41,11 +41,135 @@ class OSILayerAnalyzer:
         try:
             # Cố gắng phân tích JSON nếu có thể
             analyzed_results = json.loads(response)
-        except (json.JSONDecodeError, TypeError):
-            # Nếu không, sử dụng phản hồi gốc
-            analyzed_results = {"analysis": response}
 
-        return analyzed_results
+            # Kiểm tra xem có phải là định dạng OSI Layer Analysis mới không
+            # Nếu không, chuyển đổi sang định dạng mới
+            if "OSI Layer Analysis" not in analyzed_results:
+                # Tạo cấu trúc mới với định dạng phân tích OSI
+                new_format = {
+                    "OSI Layer Analysis": {}
+                }
+
+                # Xử lý kết quả phân tích hiện có
+                if "osi_layers" in analyzed_results:
+                    # Chuyển đổi từ định dạng osi_layers hiện tại sang OSI Layer Analysis mới
+                    osi_data = analyzed_results["osi_layers"]
+
+                    # Map các tầng từ định dạng cũ sang mới
+                    layer_mapping = {
+                        "physical": "Layer 1 (Physical)",
+                        "data_link": "Layer 2 (Data Link)",
+                        "network": "Layer 3 (Network)",
+                        "transport": "Layer 4 (Transport)",
+                        "session": "Layer 5 (Session)",
+                        "presentation": "Layer 6 (Presentation)",
+                        "application": "Layer 7 (Application)",
+                        # Hỗ trợ các biến thể khác
+                        "layer_1": "Layer 1 (Physical)",
+                        "layer_2": "Layer 2 (Data Link)",
+                        "layer_3": "Layer 3 (Network)",
+                        "layer_4": "Layer 4 (Transport)",
+                        "layer_5": "Layer 5 (Session)",
+                        "layer_6": "Layer 6 (Presentation)",
+                        "layer_7": "Layer 7 (Application)",
+                        "layer1": "Layer 1 (Physical)",
+                        "layer2": "Layer 2 (Data Link)",
+                        "layer3": "Layer 3 (Network)",
+                        "layer4": "Layer 4 (Transport)",
+                        "layer5": "Layer 5 (Session)",
+                        "layer6": "Layer 6 (Presentation)",
+                        "layer7": "Layer 7 (Application)",
+                    }
+
+                    # Chuyển đổi dữ liệu từ định dạng cũ sang mới
+                    for old_key, layer_data in osi_data.items():
+                        # Xác định tên tầng mới
+                        new_key = layer_mapping.get(old_key.lower(), old_key)
+
+                        # Khởi tạo dict cho tầng này nếu chưa có
+                        if new_key not in new_format["OSI Layer Analysis"]:
+                            new_format["OSI Layer Analysis"][new_key] = {}
+
+                        # Chuyển đổi dữ liệu
+                        if isinstance(layer_data, str):
+                            new_format["OSI Layer Analysis"][new_key]["analysis"] = layer_data
+                        elif isinstance(layer_data, dict):
+                            # Xử lý các trường dữ liệu từ định dạng cũ
+                            if "analysis" in layer_data:
+                                new_format["OSI Layer Analysis"][new_key]["analysis"] = layer_data["analysis"]
+
+                            if "issues" in layer_data and layer_data["issues"]:
+                                new_format["OSI Layer Analysis"][new_key]["security_issues"] = layer_data[
+                                    "issues"] if isinstance(layer_data["issues"], list) else [layer_data["issues"]]
+
+                            if "recommendations" in layer_data:
+                                new_format["OSI Layer Analysis"][new_key]["recommendation"] = layer_data[
+                                    "recommendations"]
+                else:
+                    # Nếu không có định dạng osi_layers, tạo cấu trúc mặc định
+                    # Phân tích từ nội dung response
+                    if "analysis" in analyzed_results:
+                        # Chia thành các tầng thông dụng
+                        new_format["OSI Layer Analysis"]["Layer 1 (Physical)"] = {
+                            "analysis": "Không có dữ liệu cụ thể về tầng vật lý trong log mạng cung cấp",
+                            "recommendation": "Kiểm tra chất lượng cáp, tín hiệu và thiết bị vật lý nếu có vấn đề kết nối"
+                        }
+
+                        new_format["OSI Layer Analysis"]["Layer 2 (Data Link)"] = {
+                            "analysis": "Cần phân tích thêm dữ liệu ARP, MAC để đánh giá tầng này",
+                            "recommendation": "Kiểm tra switch, đảm bảo router cấu hình đúng"
+                        }
+
+                        new_format["OSI Layer Analysis"]["Layer 3 (Network)"] = {
+                            "analysis": "Cần phân tích IP, ICMP và định tuyến để đánh giá tầng này",
+                            "recommendation": "Kiểm tra cấu hình định tuyến và firewall"
+                        }
+
+                        new_format["OSI Layer Analysis"]["Layer 4 (Transport)"] = {
+                            "analysis": "Cần phân tích TCP, UDP để đánh giá tầng này",
+                            "recommendation": "Kiểm tra kết nối TCP và UDP, port filtering"
+                        }
+
+                        new_format["OSI Layer Analysis"]["Layer 5-7 (Session-Presentation-Application)"] = {
+                            "analysis": "Không có đủ dữ liệu để phân tích các tầng cao hơn",
+                            "recommendation": ["Thu thập thêm log ứng dụng nếu cần phân tích sâu",
+                                               "Kiểm tra các giao thức HTTP/DNS nếu có trong traffic"]
+                        }
+
+                        # Thêm thông tin kết luận
+                        new_format[
+                            "Conclusion"] = "Cần thêm dữ liệu để phân tích chính xác vấn đề mạng. Hãy thu thập thêm packet capture và log từ các thiết bị."
+
+                # Kiểm tra xem có recommendations không
+                if "recommendations" in analyzed_results:
+                    new_format["New Detection Use Cases"] = analyzed_results["recommendations"]
+
+                return new_format
+
+            # Nếu đã có định dạng OSI Layer Analysis thì trả về trực tiếp
+            return analyzed_results
+
+        except (json.JSONDecodeError, TypeError):
+            # Nếu không thể parse JSON, tạo cấu trúc mới
+            default_result = {
+                "OSI Layer Analysis": {
+                    "Layer 1 (Physical)": {
+                        "analysis": "Không có dữ liệu cụ thể về tầng vật lý trong log mạng cung cấp",
+                        "recommendation": "Kiểm tra chất lượng cáp, tín hiệu và thiết bị vật lý nếu có vấn đề kết nối"
+                    },
+                    "Layer 2 (Data Link)": {
+                        "analysis": response,
+                        "recommendation": ["Phân tích sâu hơn các gói tin ARP/MAC",
+                                           "Kiểm tra switch configuration"]
+                    },
+                    "Layer 3-7": {
+                        "analysis": "Cần phân tích thêm",
+                        "recommendation": "Thu thập thêm log ứng dụng"
+                    }
+                },
+                "Conclusion": "Phân tích này chỉ là bước đầu, cần thu thập thêm dữ liệu để phân tích đầy đủ."
+            }
+            return default_result
 
     def _build_osi_analysis_prompt(self, results: Dict[str, Any]) -> str:
         """
@@ -155,11 +279,203 @@ class OSILayerAnalyzer:
         try:
             # Cố gắng phân tích JSON nếu có thể
             analyzed_results = json.loads(response)
-        except (json.JSONDecodeError, TypeError):
-            # Nếu không, sử dụng phản hồi gốc
-            analyzed_results = {"analysis": response}
 
-        return analyzed_results
+            # Kiểm tra xem có phải là định dạng OSI Layer Analysis mới không
+            # Nếu không, chuyển đổi sang định dạng mới
+            if "OSI Layer Analysis" not in analyzed_results:
+                # Tạo cấu trúc mới với định dạng phân tích OSI
+                new_format = {
+                    "OSI Layer Analysis": {}
+                }
+
+                # Xử lý kết quả phân tích hiện có
+                if "osi_layers" in analyzed_results:
+                    # Chuyển đổi từ định dạng osi_layers hiện tại sang OSI Layer Analysis mới
+                    osi_data = analyzed_results["osi_layers"]
+
+                    # Map các tầng từ định dạng cũ sang mới
+                    layer_mapping = {
+                        "physical": "Layer 1 (Physical)",
+                        "data_link": "Layer 2 (Data Link)",
+                        "network": "Layer 3 (Network)",
+                        "transport": "Layer 4 (Transport)",
+                        "session": "Layer 5 (Session)",
+                        "presentation": "Layer 6 (Presentation)",
+                        "application": "Layer 7 (Application)",
+                        # Hỗ trợ các biến thể khác
+                        "layer_1": "Layer 1 (Physical)",
+                        "layer_2": "Layer 2 (Data Link)",
+                        "layer_3": "Layer 3 (Network)",
+                        "layer_4": "Layer 4 (Transport)",
+                        "layer_5": "Layer 5 (Session)",
+                        "layer_6": "Layer 6 (Presentation)",
+                        "layer_7": "Layer 7 (Application)",
+                        "layer1": "Layer 1 (Physical)",
+                        "layer2": "Layer 2 (Data Link)",
+                        "layer3": "Layer 3 (Network)",
+                        "layer4": "Layer 4 (Transport)",
+                        "layer5": "Layer 5 (Session)",
+                        "layer6": "Layer 6 (Presentation)",
+                        "layer7": "Layer 7 (Application)",
+                    }
+
+                    # Chuyển đổi dữ liệu từ định dạng cũ sang mới
+                    for old_key, layer_data in osi_data.items():
+                        # Xác định tên tầng mới
+                        new_key = layer_mapping.get(old_key.lower(), old_key)
+
+                        # Khởi tạo dict cho tầng này nếu chưa có
+                        if new_key not in new_format["OSI Layer Analysis"]:
+                            new_format["OSI Layer Analysis"][new_key] = {}
+
+                        # Chuyển đổi dữ liệu
+                        if isinstance(layer_data, str):
+                            new_format["OSI Layer Analysis"][new_key]["analysis"] = layer_data
+                        elif isinstance(layer_data, dict):
+                            # Xử lý các trường dữ liệu từ định dạng cũ
+                            if "analysis" in layer_data:
+                                new_format["OSI Layer Analysis"][new_key]["analysis"] = layer_data["analysis"]
+
+                            if "issues" in layer_data and layer_data["issues"]:
+                                new_format["OSI Layer Analysis"][new_key]["security_issues"] = layer_data[
+                                    "issues"] if isinstance(layer_data["issues"], list) else [layer_data["issues"]]
+
+                            if "recommendations" in layer_data:
+                                new_format["OSI Layer Analysis"][new_key]["recommendation"] = layer_data[
+                                    "recommendations"]
+                else:
+                    # Nếu không có định dạng osi_layers, phân tích từ nội dung phân tích gói tin
+
+                    # Tạo cấu trúc mẫu cho phân tích gói tin
+                    protocols = set()
+                    for packet in packets:
+                        if hasattr(packet, 'protocol'):
+                            protocols.add(packet.protocol)
+
+                    # Thông tin mặc định cho tầng Physical
+                    new_format["OSI Layer Analysis"]["Layer 1 (Physical)"] = {
+                        "analysis": "Không có dữ liệu cụ thể về tầng vật lý trong các gói tin cung cấp",
+                        "recommendation": "Kiểm tra chất lượng cáp, tín hiệu và thiết bị vật lý nếu có vấn đề kết nối"
+                    }
+
+                    # Mức độ nghiêm trọng mặc định, sẽ được điều chỉnh theo số lượng vấn đề phát hiện
+                    default_severity = 3
+
+                    # Kiểm tra ARP
+                    if 'ARP' in protocols:
+                        new_format["OSI Layer Analysis"]["Layer 2 (Data Link)"] = {
+                            "analysis": "Phân tích gói ARP",
+                            "security_issues": ["Kiểm tra các gói ARP để xác định dấu hiệu ARP spoofing"],
+                            "severity": default_severity + 1,
+                            "recommendation": ["Kiểm tra các gói ARP request/reply",
+                                               "Triển khai ARP spoofing detection"]
+                        }
+                    else:
+                        new_format["OSI Layer Analysis"]["Layer 2 (Data Link)"] = {
+                            "analysis": "Không tìm thấy gói ARP trong dữ liệu",
+                            "recommendation": "Kiểm tra switch configuration và MAC address tables"
+                        }
+
+                    # Kiểm tra IP/ICMP
+                    ip_issues = []
+                    if 'ICMP' in protocols:
+                        ip_issues.append("Kiểm tra các gói ICMP để xác định vấn đề kết nối")
+
+                    new_format["OSI Layer Analysis"]["Layer 3 (Network)"] = {
+                        "analysis": "Phân tích traffic IP",
+                        "security_issues": ip_issues if ip_issues else ["Phân tích routing và firewall configuration"],
+                        "severity": default_severity if not ip_issues else default_severity + 2,
+                        "recommendation": ["Kiểm tra cấu hình routing và ICMP filtering"]
+                    }
+
+                    # Kiểm tra TCP/UDP
+                    transport_issues = []
+                    if 'TCP' in protocols:
+                        transport_issues.append("Phân tích TCP handshake và TCP flags")
+                    if 'UDP' in protocols:
+                        transport_issues.append("Kiểm tra UDP traffic và port availability")
+
+                    new_format["OSI Layer Analysis"]["Layer 4 (Transport)"] = {
+                        "analysis": "Phân tích gói tin TCP/UDP",
+                        "security_issues": transport_issues if transport_issues else [
+                            "Kiểm tra trạng thái port và kết nối"],
+                        "severity": default_severity if not transport_issues else default_severity + 1,
+                        "recommendation": ["Kiểm tra firewall stateful inspection", "Phân tích TCP state machine"]
+                    }
+
+                    # Thông tin mặc định cho tầng cao hơn
+                    new_format["OSI Layer Analysis"]["Layer 5-7 (Session-Presentation-Application)"] = {
+                        "analysis": "Không có đủ dữ liệu để phân tích các tầng cao hơn",
+                        "recommendation": ["Thu thập thêm log ứng dụng nếu cần phân tích sâu",
+                                           "Kiểm tra các giao thức HTTP/DNS nếu có trong traffic"]
+                    }
+
+                    # Nếu có phân tích trong kết quả, thêm vào kết luận
+                    if "analysis" in analyzed_results:
+                        new_format["Conclusion"] = analyzed_results["analysis"]
+                    else:
+                        new_format["Conclusion"] = "Cần phân tích sâu hơn để xác định chính xác vấn đề mạng"
+
+                # Thêm Use Cases nếu có recommendations
+                if "recommendations" in analyzed_results:
+                    new_format["New Detection Use Cases"] = analyzed_results["recommendations"]
+                else:
+                    new_format["New Detection Use Cases"] = [
+                        "Tự động phát hiện ARP spoofing từ packet capture",
+                        "Phát hiện port scan từ phân tích TCP flags",
+                        "Phân tích ICMP Unreachable messages để phát hiện network scanning",
+                        "Xây dựng baseline behavior để phát hiện connection anomalies"
+                    ]
+
+                # Thêm kết luận nếu chưa có
+                if "Conclusion" not in new_format and "summary" in analyzed_results:
+                    new_format["Conclusion"] = analyzed_results["summary"]
+
+                return new_format
+
+            # Nếu đã có định dạng OSI Layer Analysis thì trả về trực tiếp
+            return analyzed_results
+
+        except (json.JSONDecodeError, TypeError):
+            # Nếu không thể parse JSON, sử dụng phản hồi dạng văn bản để tạo cấu trúc mới
+            default_result = {
+                "OSI Layer Analysis": {
+                    "Layer 1 (Physical)": {
+                        "analysis": "Không có dữ liệu cụ thể về tầng vật lý trong các gói tin cung cấp",
+                        "recommendation": "Kiểm tra chất lượng cáp, tín hiệu và thiết bị vật lý nếu có vấn đề kết nối"
+                    },
+                    "Layer 2 (Data Link)": {
+                        "analysis": "Phân tích gói tin Data Link",
+                        "security_issues": ["Kiểm tra ARP spoofing", "Kiểm tra MAC flooding"],
+                        "severity": 4,
+                        "recommendation": ["Triển khai ARP inspection", "Bảo mật switch port"]
+                    },
+                    "Layer 3 (Network)": {
+                        "analysis": "Phân tích gói tin Network",
+                        "security_issues": ["Kiểm tra IP spoofing", "Phân tích ICMP Unreachable"],
+                        "severity": 5,
+                        "recommendation": ["Triển khai anti-spoofing", "Kiểm tra cấu hình firewall"]
+                    },
+                    "Layer 4 (Transport)": {
+                        "analysis": "Phân tích gói tin Transport",
+                        "security_issues": ["Kiểm tra TCP scan", "Phân tích UDP traffic"],
+                        "severity": 4,
+                        "recommendation": ["Kiểm tra TCP state", "Giám sát UDP traffic"]
+                    },
+                    "Layer 5-7 (Session-Presentation-Application)": {
+                        "analysis": "Không có đủ dữ liệu để phân tích các tầng cao hơn",
+                        "recommendation": ["Thu thập thêm log ứng dụng nếu cần phân tích sâu"]
+                    }
+                },
+                "Conclusion": "Cần phân tích thêm để xác định chính xác vấn đề. Phát hiện ban đầu cho thấy dấu hiệu ARP/IP scanning.",
+                "New Detection Use Cases": [
+                    "Phát hiện ARP scan tự động bằng machine learning",
+                    "Giám sát hành vi bất thường kết hợp nhiều tầng mạng",
+                    "Phân tích tương quan giữa ICMP Unreachable và port scan",
+                    "Xây dựng baseline network behavior để phát hiện anomaly"
+                ]
+            }
+            return default_result
 
     def _build_raw_packet_osi_prompt(self, packets: List, custom_prompt: str = None) -> str:
         """
@@ -307,47 +623,6 @@ class OSILayerAnalyzer:
 
         if len(packets) > 15:
             prompt += f"\n*... và {len(packets) - 15} gói tin khác ...*\n"
-
-        # Thêm hướng dẫn phân tích theo mô hình OSI
-        # prompt += """
-        # \n## Phân tích theo mô hình OSI
-        # Hãy phân tích lưu lượng mạng theo 7 tầng của mô hình OSI, tập trung vào các vấn đề kết nối và dấu hiệu tấn công:
-        #
-        # ### 1. Tầng Vật lý (Physical Layer)
-        # - Xác định các dấu hiệu của vấn đề vật lý (nếu có thể suy luận từ dữ liệu gói tin)
-        # - Các vấn đề về độ trễ, mất gói tin, và truyền dẫn
-        #
-        # ### 2. Tầng Liên kết dữ liệu (Data Link Layer)
-        # - Phân tích các vấn đề liên quan đến MAC, ARP cache, và broadcast/multicast
-        # - Phát hiện các tấn công ARP poisoning, MAC flooding, MAC spoofing
-        # - Xác định các vấn đề VLAN
-        #
-        # ### 3. Tầng Mạng (Network Layer)
-        # - Phân tích định tuyến IP, fragment, TTL, và các vấn đề ICMP
-        # - Phát hiện lỗi định tuyến, vấn đề NAT, và cấu hình firewall
-        # - Phát hiện tấn công: IP spoofing, ICMP tunneling/flooding
-        #
-        # ### 4. Tầng Giao vận (Transport Layer)
-        # - Phân tích chi tiết về TCP handshake, cờ, cổng, và thứ tự gói tin
-        # - Phân tích các vấn đề kết nối: RST packets, retransmissions, window size
-        # - Phát hiện tấn công: SYN flood, RST attack, session hijacking, port scanning
-        #
-        # ### 5. Tầng Phiên và Trình diễn (Session & Presentation Layers)
-        # - Phân tích các vấn đề thiết lập và duy trì phiên
-        # - Phát hiện các vấn đề mã hóa, SSL/TLS, và chuyển đổi dữ liệu
-        #
-        # ### 6. Tầng Ứng dụng (Application Layer)
-        # - Phân tích các giao thức ứng dụng: HTTP, DNS, DHCP, FTP...
-        # - Xác định các vấn đề ứng dụng, timeout, và lỗi phản hồi
-        # - Phát hiện tấn công: DNS cache poisoning, HTTP flood, DHCP starvation
-        #
-        # ## Kết luận và Giải pháp
-        # 1. Tóm tắt các vấn đề kết nối mạng chính đã phát hiện
-        # 2. Xác định chính xác thành phần nào của mạng đang gặp trục trặc
-        # 3. Các dấu hiệu tấn công mạng đã phát hiện và mức độ nghiêm trọng
-        # 4. Đề xuất các lệnh và công cụ debug cụ thể để xác minh và khắc phục vấn đề
-        # 5. Hướng dẫn chi tiết để khắc phục các vấn đề đã phát hiện
-        # """
 
         # load prompt from file yaml
         # Khởi tạo PromptService
