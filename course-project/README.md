@@ -51,7 +51,7 @@ tích các cuộc tấn công mạng.
 
 ```bash
 # Clone repository
-git clone https://github.com/username/network-packet-analyzer.git
+git clone https://github.com/benphamdev/NetworkPrograming
 cd network-packet-analyzer
 
 # Cài đặt các thư viện phụ thuộc
@@ -92,9 +92,8 @@ Giao diện web bao gồm các tab:
 - **Phân tích PCAP**: Tải lên và phân tích file pcap
 - **ChatBox Tư Vấn**: Tư vấn debug mạng và rủi ro bảo mật
 - **Phân tích theo mô hình OSI**: Phân tích chi tiết các vấn đề ở từng tầng OSI
-- **Giám sát thời gian thực**: Theo dõi lưu lượng mạng theo thời gian thực
-- **Chi tiết tấn công**: Xem chi tiết các cuộc tấn công đã phát hiện
-- **Thống kê luồng**: Xem thống kê về luồng mạng
+- **Xuât báo cáo**: Tạo và tải xuống báo cáo phân tích
+- **Biểu đồ**: Trực quan hóa luồng mạng và các cuộc tấn công
 
 ### Giao diện dòng lệnh
 
@@ -165,6 +164,26 @@ kiểm thử. Kiến trúc hiện tại tuân theo các nguyên tắc:
 2. **Open/Closed Principle**: Mở rộng, không sửa đổi
 3. **Phân tách các tầng**: Domain, Use Cases, Interfaces, Infrastructure
 
+### Cải tiến gần đây - Modularization
+
+Gần đây, chúng tôi đã thực hiện cải tiến kiến trúc để modularize hệ thống:
+
+- **Modularization của GradioPresenter**: Chia nhỏ thành các module có trách nhiệm đơn lẻ
+    - Chat Interface: Xử lý tương tác chat với người dùng
+    - Dashboard Presenter: Quản lý trực quan hóa dashboard
+    - Report Manager: Xử lý việc tạo và tải xuống báo cáo
+    - UI Layout Creator: Tạo các thành phần UI và layout
+    - UI Event Handlers: Quản lý kết nối sự kiện giữa các thành phần UI
+
+## Hệ thống Prompt YAML
+
+Dự án sử dụng hệ thống Prompt YAML để tách biệt nội dung prompt khỏi mã nguồn:
+
+- Các file YAML chứa định nghĩa prompt cho hệ thống phân tích mạng
+- Giúp dễ dàng quản lý và tùy chỉnh prompt mà không cần sửa đổi mã nguồn
+- Hỗ trợ các biến trong prompt (như `{{context}}`) được thay thế khi runtime
+- Cấu trúc tổ chức rõ ràng với các prompt chuyên biệt cho từng loại phân tích
+
 ## Cấu trúc dự án
 
 ```
@@ -187,9 +206,13 @@ course-project/
   │   │   └── presenters/  # Các lớp xử lý hiển thị kết quả
   │   ├── infrastructure/  # Triển khai cụ thể cho các interface
   │   │   ├── prompts/     # Nơi lưu trữ prompt và config model
+  │   │   ├── factories/   # Các factory tạo đối tượng
   │   │   └── repositories/# Triển khai các repository
   │   └── utils/           # Tiện ích chung
   ├── visualizations/      # Kết quả trực quan hóa
+  ├── templates/           # Các template HTML
+  ├── docs/                # Tài liệu
+  ├── reports/             # Báo cáo phân tích
   ├── .env                 # File cấu hình biến môi trường
   ├── example.env          # Mẫu file cấu hình
   ├── main.py              # Điểm vào chính của ứng dụng
@@ -228,6 +251,20 @@ Tool sẽ phát hiện các loại tấn công dựa trên các dấu hiệu sau
     - Lưu lượng bất thường từ nhiều nguồn đến một đích
     - Tỷ lệ cao các kết nối không hoàn chỉnh
     - Tăng đột biến lưu lượng mạng đến các port hoặc dịch vụ cụ thể
+
+## Hướng phát triển tương lai
+
+1. **Cải thiện tính module**:
+    - Phân chia thêm phương thức phân tích phức tạp
+    - Triển khai event bus cho coupling lỏng lẻo hơn
+
+2. **Bổ sung kiểm thử**:
+    - Thêm unit test toàn diện cho từng module
+    - Tạo integration test giữa các module
+
+3. **Cấu hình**:
+    - Di chuyển các giá trị hard-code vào file cấu hình
+    - Triển khai dependency injection để dễ kiểm thử hơn
 
 ## Đóng góp
 
