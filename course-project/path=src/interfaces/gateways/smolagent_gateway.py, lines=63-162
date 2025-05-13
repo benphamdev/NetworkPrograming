@@ -1,0 +1,143 @@
+    def _initialize_agents(self):
+        """Initialize specialized agents for network analysis."""
+        # Search agent (support utility)
+        self.search_agent = ToolCallingAgent(
+            tools=[DuckDuckGoSearchTool(), VisitWebpageTool()],
+            model=self.model,
+            name="search_agent",
+            description="This agent performs web searches to get up-to-date information about network protocols and vulnerabilities."
+        )
+
+        # Packet analyzer agent (general packet analysis agent)
+        self.packet_analyzer_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="packet_analyzer_agent",
+            description="This agent specializes in detailed packet inspection, analyzing protocol headers, flags, and payload data to identify anomalies.",
+            managed_agents=[self.search_agent]
+        )
+
+        # LAYER 2 - DATA LINK
+        # Ethernet agent (Layer 2)
+        self.ethernet_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="ethernet_agent",
+            description="This agent specializes in Ethernet frame analysis, focusing on MAC addressing, VLAN tagging, and layer 2 collisions or errors.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # ARP agent (Layer 2-3)
+        self.arp_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="arp_agent",
+            description="This agent specializes in ARP protocol analysis, focusing on ARP spoofing detection, MAC-IP mapping conflicts, and ARP cache poisoning.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # LAYER 3 - NETWORK
+        # IPv4/IPv6 agent (Layer 3)
+        self.ip_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="ip_agent",
+            description="This agent specializes in IP protocol analysis, focusing on IP fragmentation, TTL issues, routing problems, and IPv4/IPv6 specific features.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # ICMP agent (Layer 3)
+        self.icmp_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="icmp_agent",
+            description="This agent specializes in ICMP protocol analysis, focusing on unusual echo patterns, tunnel detection, and ICMP flooding.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # LAYER 4 - TRANSPORT
+        # TCP agent (Layer 4)
+        self.tcp_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="tcp_agent",
+            description="This agent specializes in TCP protocol analysis, focusing on handshake analysis, flags, sequence numbers, and potential TCP-specific attacks.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # UDP agent (Layer 4)
+        self.udp_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="udp_agent",
+            description="This agent specializes in UDP protocol analysis, focusing on connectionless communication, datagram issues, and UDP-specific attacks.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # LAYER 5 - SESSION
+        # Session agent (Layer 5)
+        self.session_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="session_agent",
+            description="This agent specializes in Session layer protocols analysis, focusing on session establishment, management, and termination. Analyzes protocols like SIP, NetBIOS, RPC, and SMB.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # LAYER 6 - PRESENTATION
+        # TLS/SSL agent (Layer 6)
+        self.tls_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="tls_agent",
+            description="This agent specializes in TLS/SSL protocol analysis, focusing on handshake issues, certificate validation, cipher suites, and encryption vulnerabilities.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # LAYER 7 - APPLICATION
+        # DNS agent (Layer 7)
+        self.dns_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="dns_agent", 
+            description="This agent specializes in DNS protocol analysis, focusing on DNS queries/responses, cache poisoning, tunneling, and zone transfers.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # HTTP/HTTPS agent (Layer 7)
+        self.http_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="http_agent",
+            description="This agent specializes in HTTP/HTTPS protocol analysis, focusing on request/response patterns, status codes, headers, and web-based attacks.",
+            managed_agents=[self.packet_analyzer_agent]
+        )
+
+        # ATTACK DETECTION AGENT
+        # Attack detection agent
+        self.attack_agent = ToolCallingAgent(
+            tools=[],
+            model=self.model,
+            name="attack_agent",
+            description="This agent specializes in correlating evidence from multiple sources to identify attack patterns and provide threat intelligence.",
+            managed_agents=[self.ethernet_agent, self.arp_agent, 
+                           self.ip_agent, self.icmp_agent,
+                           self.tcp_agent, self.udp_agent,
+                           self.session_agent, self.tls_agent, 
+                           self.dns_agent, self.http_agent]
+        )
+
+        # MAIN COORDINATOR AGENT
+        # Manager agent - supervises and coordinates other agents
+        self.manager_agent = CodeAgent(
+            tools=[],
+            model=self.model,
+            name="analyst_agent",
+            description="This is the main coordinator that analyzes network traffic patterns and synthesizes findings.",
+            managed_agents=[self.attack_agent, self.packet_analyzer_agent, 
+                           self.ethernet_agent, self.arp_agent, 
+                           self.ip_agent, self.icmp_agent,
+                           self.tcp_agent, self.udp_agent,
+                           self.session_agent, self.tls_agent, 
+                           self.dns_agent, self.http_agent]
+        ) 
