@@ -231,12 +231,7 @@ class SmolagentGateway:
             model=self.model,
             name="analyst_agent",
             description="This is the main coordinator that analyzes network traffic patterns and synthesizes findings.",
-            managed_agents=[self.attack_agent, self.packet_analyzer_agent,
-                            self.ethernet_agent, self.arp_agent,
-                            self.ip_agent, self.icmp_agent,
-                            self.tcp_agent, self.udp_agent,
-                            self.session_agent, self.tls_agent,
-                            self.dns_agent, self.http_agent]
+            managed_agents=[self.packet_analyzer_agent, self.search_agent]
         )
 
     def format_result_to_markdown(self, result: Dict[str, Any]) -> str:
@@ -271,7 +266,7 @@ class SmolagentGateway:
                 return result
 
         # Xử lý nếu analysis chứa "Out - Final answer:"
-        if "analysis" in result and isinstance(result["analysis"], str):
+        if isinstance(result, dict) and "analysis" in result and isinstance(result["analysis"], str):
             if "Out - Final answer:" in result["analysis"]:
                 # Lấy phần nội dung trước "Out - Final answer:"
                 full_content = result["analysis"].split("Out - Final answer:")[0].strip()
@@ -281,30 +276,30 @@ class SmolagentGateway:
         markdown = "# Kết quả phân tích mạng\n\n"
 
         # Xử lý trường hợp phân tích OSI Layer mới
-        if "OSI Layer Analysis" in result:
+        if isinstance(result, dict) and "OSI Layer Analysis" in result:
             markdown += "## Phân tích theo mô hình OSI\n\n"
             osi_layers = result["OSI Layer Analysis"]
-            
+
             # Duyệt qua từng tầng OSI
             for layer, layer_info in osi_layers.items():
                 markdown += f"### {layer}\n\n"
-                
+
                 if isinstance(layer_info, dict):
                     # Phân tích 
                     if "analysis" in layer_info:
                         markdown += f"**Phân tích:** {layer_info['analysis']}\n\n"
-                    
+
                     # Security issues
                     if "security_issues" in layer_info:
                         markdown += "**Vấn đề bảo mật:**\n\n"
                         for issue in layer_info["security_issues"]:
                             markdown += f"- {issue}\n"
                         markdown += "\n"
-                    
+
                     # Severity
                     if "severity" in layer_info:
                         markdown += f"**Mức độ nghiêm trọng:** {layer_info['severity']}/10\n\n"
-                    
+
                     # Recommendations
                     if "recommendation" in layer_info:
                         markdown += "**Khuyến nghị:**\n\n"
@@ -317,12 +312,12 @@ class SmolagentGateway:
                         markdown += "\n"
                 else:
                     markdown += f"{layer_info}\n\n"
-            
+
             # Conclusion nếu có
             if "Conclusion" in result:
                 markdown += "## Kết luận\n\n"
                 markdown += f"{result['Conclusion']}\n\n"
-                
+
             # New Detection Use Cases nếu có
             if "New Detection Use Cases" in result:
                 markdown += "## Các trường hợp phát hiện mới\n\n"
@@ -333,10 +328,14 @@ class SmolagentGateway:
                 else:
                     markdown += f"{use_cases}\n"
                 markdown += "\n"
-                
+
             return markdown
 
         # Xử lý các trường hợp khác
+        if not isinstance(result, dict):
+            # Nếu kết quả không phải là từ điển hoặc chuỗi, chuyển về chuỗi và trả về
+            return f"## Phân tích\n\n{str(result)}\n\n"
+            
         # Thêm tóm tắt nếu có
         if "summary" in result:
             markdown += f"## Tóm tắt\n\n{result['summary']}\n\n"
@@ -465,9 +464,9 @@ class SmolagentGateway:
         # Thêm các thông tin khác
         for key, value in result.items():
             if key not in ["summary", "analysis", "findings", "attack_detected", "attack_type",
-                           "confidence", "recommendations", "osi_layers", "tcp_analysis",
-                           "udp_analysis", "icmp_analysis", "arp_analysis", "dns_analysis",
-                           "http_analysis", "OSI Layer Analysis", "Conclusion", "New Detection Use Cases"]:
+                          "confidence", "recommendations", "osi_layers", "tcp_analysis",
+                          "udp_analysis", "icmp_analysis", "arp_analysis", "dns_analysis",
+                          "http_analysis", "OSI Layer Analysis", "Conclusion", "New Detection Use Cases"]:
 
                 title = key.replace("_", " ").title()
                 markdown += f"## {title}\n\n"

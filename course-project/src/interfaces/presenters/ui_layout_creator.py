@@ -2,7 +2,7 @@
 UI Layout Creator - Tạo giao diện người dùng với Gradio.
 """
 import gradio as gr
-import os
+
 
 class UILayoutCreator:
     """Tạo giao diện người dùng với Gradio."""
@@ -172,8 +172,8 @@ class UILayoutCreator:
             with gr.Row():
                 refresh_dashboard_btn = gr.Button("Làm mới Dashboard", variant="primary")
 
-        return (device_status_chart, link_quality_chart, arp_attack_chart, icmp_anomaly_chart, 
-                dhcp_attack_chart, dns_attack_chart, top_n_slider, update_top_n_btn, 
+        return (device_status_chart, link_quality_chart, arp_attack_chart, icmp_anomaly_chart,
+                dhcp_attack_chart, dns_attack_chart, top_n_slider, update_top_n_btn,
                 display_options, top_talkers_chart, refresh_dashboard_btn)
 
     def create_chat_tab(self, interface):
@@ -215,8 +215,6 @@ class UILayoutCreator:
                     - Phân tích các vấn đề kết nối trong mạng này
                     - Có dấu hiệu tấn công ARP spoofing không?
                     - Phân tích các gói tin ICMP unreachable
-                    - Phân tích lưu lượng mạng theo mô hình OSI
-                    - Đề xuất các lệnh để debug vấn đề routing
                     """)
 
                     clear_chat_btn = gr.Button("Xóa lịch sử chat", variant="secondary")
@@ -270,16 +268,16 @@ class UILayoutCreator:
                     with gr.Row():
                         refresh_detail_btn = gr.Button("Làm mới phân tích", variant="secondary")
                         export_report_btn = gr.Button("📊 Xuất báo cáo", variant="primary",
-                                                    elem_id="export_report_btn")
+                                                      elem_id="export_report_btn")
 
                     # Cập nhật giao diện quản lý báo cáo
                     with gr.Accordion("Báo cáo đã tạo", open=True, elem_id="reports_accordion"):
                         report_status = gr.Markdown("Chưa có báo cáo nào", elem_id="report_status")
-                        
+
                         # Thêm file download component để hỗ trợ tải xuống file
                         file_download = gr.File(
-                            label="Tải xuống báo cáo", 
-                            interactive=False, 
+                            label="Tải xuống báo cáo",
+                            interactive=False,
                             visible=True,
                             elem_id="report_download"
                         )
@@ -304,7 +302,7 @@ class UILayoutCreator:
                 with gr.Column():
                     tcp_attack_chart = gr.Plot(label="Phân tích tầng Mạng (Network)")
 
-        return (ai_analysis_detail, refresh_detail_btn, export_report_btn, report_status, 
+        return (ai_analysis_detail, refresh_detail_btn, export_report_btn, report_status,
                 file_download, reports_df, refresh_reports_btn, tcp_flags_chart, tcp_attack_chart)
 
     def create_interface(self):
@@ -314,10 +312,10 @@ class UILayoutCreator:
         Returns:
             Tuple (interface, components)
         """
-        interface = gr.Blocks(title="Network Packet Analyzer cho Network Engineer", 
-                             theme=gr.themes.Soft(), 
-                             css=self.css)
-        
+        interface = gr.Blocks(title="Network Packet Analyzer cho Network Engineer",
+                              theme=gr.themes.Soft(),
+                              css=self.css)
+
         with interface:
             gr.Markdown("# Network Packet Analyzer cho Network Engineer")
 
@@ -341,5 +339,5 @@ class UILayoutCreator:
                 'osi': osi_components,
                 'state': (current_file_info, analysis_state)
             }
-            
+
         return interface, components
