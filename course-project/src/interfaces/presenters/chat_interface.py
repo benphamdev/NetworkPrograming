@@ -122,11 +122,32 @@ class ChatInterface:
             Lịch sử chat khởi tạo
         """
         if file:
-            # Phân tích sơ qua file để cập nhật self.base_presenter.latest_pcap_file
-            file_path = file.name if hasattr(file, 'name') else file
-            self.base_presenter.latest_pcap_file = file_path
-            # Trả về placeholder message trước khi phân tích
-            return [{"role": "assistant",
-                     "content": f"Đã nhận file {os.path.basename(file_path)}. Nhấn nút 'Phân tích' để tiến hành phân tích file."}]
+            try:
+                # Lấy đường dẫn file
+                file_path = file.name if hasattr(file, 'name') else file
+                
+                # Tải và phân tích file PCAP ngay khi upload
+                results = self.analyzer.chat_handler.load_pcap_file(file_path)
+                
+                # Kiểm tra lỗi
+                if "error" in results:
+                    return [{"role": "assistant", "content": f"Đã xảy ra lỗi khi tải file: {results['error']}"}]
+                
+                # Cập nhật thông tin trong base_presenter
+                self.base_presenter.latest_pcap_file = file_path
+                self.base_presenter.latest_results = results
+                
+                # Cập nhật thông tin cho analyzer và pcap_analyzer
+                self.analyzer.pcap_analyzer.latest_pcap_file = file_path
+                self.analyzer.pcap_analyzer.latest_results = results
+                
+                # Tạo tin nhắn chào mừng với thông tin từ file đã phân tích
+                initial_message = self.analyzer.get_initial_chat_message(results)
+                
+                return [{"role": "assistant", "content": initial_message}]
+            except Exception as e:
+                # Xử lý lỗi
+                return [{"role": "assistant", "content": f"Đã xảy ra lỗi khi tải file: {str(e)}"}]
+        
         return [{"role": "assistant",
-                 "content": "Chào bạn! Tôi là trợ lý phân tích mạng. Vui lòng tải lên file PCAP để bắt đầu phân tích."}]
+                "content": "Chào bạn! Tôi là trợ lý phân tích mạng. Vui lòng tải lên file PCAP để bắt đầu phân tích."}]

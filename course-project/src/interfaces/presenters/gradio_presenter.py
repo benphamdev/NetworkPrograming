@@ -3,20 +3,16 @@
 Gradio Presenter - Web-based interface for packet analysis using Gradio.
 It includes components for analyzing PCAP files, visualizing results, and providing real-time monitoring.
 """
-import os
 from typing import Tuple
-
-import gradio as gr
 
 from src.interfaces.presenters.analyzer_component import AnalyzerComponent
 from src.interfaces.presenters.base_presenter import BasePresenter
 from src.interfaces.presenters.chart_creator import ChartCreator
-from src.interfaces.presenters.monitoring_component import MonitoringComponent
 from src.interfaces.presenters.chat_interface import ChatInterface
 from src.interfaces.presenters.dashboard_presenter import DashboardPresenter
 from src.interfaces.presenters.report_manager import ReportManager
-from src.interfaces.presenters.ui_layout_creator import UILayoutCreator
-from src.interfaces.presenters.ui_event_handlers import UIEventHandlers
+from src.interfaces.presenters.ui.ui_event_handlers import UIEventHandlers
+from src.interfaces.presenters.ui.ui_layout_creator import UILayoutCreator
 
 
 class GradioPresenter:
@@ -33,8 +29,7 @@ class GradioPresenter:
         self.base_presenter = BasePresenter(controller)
         self.chart_creator = ChartCreator()
         self.analyzer = AnalyzerComponent(self.base_presenter)
-        self.monitoring = MonitoringComponent(self.base_presenter)
-        
+
         # Khởi tạo các module mới
         self.chat_interface = ChatInterface(self.base_presenter, self.analyzer)
         self.dashboard = DashboardPresenter(self.base_presenter, self.chart_creator)
@@ -113,18 +108,6 @@ class GradioPresenter:
         except Exception as e:
             return f"Lỗi khi phân tích gói tin: {str(e)}\n\nVui lòng tải lại file PCAP và thử lại."
 
-    def start_monitoring(self, duration_minutes: int) -> str:
-        """Bắt đầu giám sát thời gian thực."""
-        return self.monitoring.start_monitoring(duration_minutes)
-
-    def display_attack_details(self, hours: int) -> Tuple:
-        """Hiển thị chi tiết tấn công."""
-        return self.monitoring.display_attack_details(hours)
-
-    def display_flow_stats(self, hours: int) -> Tuple:
-        """Hiển thị thống kê luồng."""
-        return self.monitoring.display_flow_stats(hours)
-
     def analyze_raw_packets(self, pcap_file, prompt: str = None) -> str:
         """
         Phân tích các gói tin thô từ file PCAP với prompt tùy chỉnh.
@@ -137,7 +120,7 @@ class GradioPresenter:
             Phân tích chi tiết dưới dạng chuỗi văn bản markdown
         """
         if not pcap_file:
-            return "Vui lòng tải lên file PCAP trước khi phân tích."        # Cập nhật thông tin file hiện tại
+            return "Vui lòng tải lên file PCAP trước khi phân tích."  # Cập nhật thông tin file hiện tại
         file_path = pcap_file.name if hasattr(pcap_file, 'name') else pcap_file
         self.base_presenter.latest_pcap_file = file_path
 
@@ -148,10 +131,10 @@ class GradioPresenter:
         """Launch the Gradio interface."""
         # Tạo giao diện UI
         interface, components = self.ui_creator.create_interface()
-        
+
         # Kết nối các sự kiện
         event_handler = UIEventHandlers(self, components)
         event_handler.connect_events(interface)
-        
+
         # Khởi chạy giao diện
         interface.launch(share=False)

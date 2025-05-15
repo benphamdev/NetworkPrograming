@@ -194,3 +194,5 @@ data/packets
 __pycache__
 
 *.log
+
+reports

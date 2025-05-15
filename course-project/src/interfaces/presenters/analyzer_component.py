@@ -228,15 +228,55 @@ class AnalyzerComponent:
         Returns:
             Tuple (summary, attack_table, protocol_chart, attack_chart, flow_graph, tcp_visualizations, initial_chat_message)
         """
-        # Sử dụng pcap_analyzer để phân tích file
-        result = self.pcap_analyzer.analyze_pcap(pcap_file)
+        if not pcap_file:
+            empty_chart = self.chart_creator._create_empty_chart("Không có dữ liệu")
+            error_msg = "Vui lòng tải lên file PCAP để phân tích."
+            return error_msg, None, empty_chart, empty_chart, empty_chart, empty_chart, error_msg
+
+        try:
+            # Lấy đường dẫn file
+            file_path = pcap_file.name if hasattr(pcap_file, 'name') else pcap_file
+            
+            # Sử dụng ChatHandler để load file PCAP
+            results = self.chat_handler.load_pcap_file(file_path)
+            
+            # Kiểm tra lỗi
+            if "error" in results:
+                empty_chart = self.chart_creator._create_empty_chart("Lỗi phân tích")
+                return results["error"], None, empty_chart, empty_chart, empty_chart, empty_chart, results["error"]
+            
+            # Cập nhật thông tin trong base_presenter và pcap_analyzer
+            self.base_presenter.latest_pcap_file = file_path
+            self.base_presenter.latest_results = results
+            self.pcap_analyzer.latest_pcap_file = file_path
+            self.pcap_analyzer.latest_results = results
+            
+            # Tạo tóm tắt
+            summary = self.pcap_analyzer._create_summary(file_path, results)
+            
+            # Tạo bảng tấn công
+            attack_table = self.pcap_analyzer._format_attack_table(results.get("attacks", []))
+            
+            # Tạo biểu đồ giao thức
+            protocol_chart = self.chart_creator.create_protocol_chart(results)
+            
+            # Tạo biểu đồ mức độ nghiêm trọng của tấn công
+            attack_chart = self.chart_creator.create_attack_severity_chart(results.get("attacks", []))
+            
+            # Tạo đồ thị luồng
+            flow_graph = self.chart_creator.create_flow_graph(results)
+            
+            # Tạo trực quan hóa cụ thể cho TCP
+            tcp_visualizations = self.chart_creator.create_tcp_visualizations(results)
+            
+            # Tạo tin nhắn chat ban đầu
+            initial_chat_message = self.get_initial_chat_message(results)
+            
+            return summary, attack_table, protocol_chart, attack_chart, flow_graph, tcp_visualizations, initial_chat_message
         
-        # Cập nhật thông tin trong base_presenter
-        self.base_presenter.latest_pcap_file = self.pcap_analyzer.latest_pcap_file
-        self.base_presenter.latest_results = self.pcap_analyzer.latest_results
-        
-        # Cập nhật thông tin file hiện tại cho chat handler
-        self.chat_handler.latest_pcap_file = self.pcap_analyzer.latest_pcap_file
-        
-        # Trả về kết quả phân tích
-        return result
+        except Exception as e:
+            # Xử lý nếu có lỗi trong quá trình phân tích
+            error_message = f"Lỗi khi phân tích file: {str(e)}"
+            empty_chart = self.chart_creator._create_empty_chart("Lỗi phân tích")
+            
+            return error_message, None, empty_chart, empty_chart, empty_chart, empty_chart, error_message
