@@ -24,6 +24,8 @@ from src.use_cases.prompt_service import PromptService
 register()
 SmolagentsInstrumentor().instrument()
 
+# Biến toàn cục để lưu kết quả markdown cuối cùng
+LATEST_ANALYSIS_MARKDOWN = ""
 
 class SmolagentGateway:
     """Gateway for interfacing with smolagent framework."""
@@ -244,6 +246,8 @@ class SmolagentGateway:
         Returns:
             Chuỗi markdown chứa kết quả phân tích
         """
+        global LATEST_ANALYSIS_MARKDOWN
+        
         if not result:
             return "Không có kết quả phân tích."
 
@@ -329,6 +333,8 @@ class SmolagentGateway:
                     markdown += f"{use_cases}\n"
                 markdown += "\n"
 
+            # Lưu kết quả vào biến toàn cục
+            LATEST_ANALYSIS_MARKDOWN = markdown
             return markdown
 
         # Xử lý các trường hợp khác
@@ -498,6 +504,8 @@ class SmolagentGateway:
                 else:
                     markdown += f"{value}\n\n"
 
+        # Lưu kết quả vào biến toàn cục
+        LATEST_ANALYSIS_MARKDOWN = markdown
         return markdown
 
     def analyze_traffic_pattern(self, stats: Dict[str, Any]) -> str:
