@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 from typing import Dict, List
+import random
 
 class ChartCreator:
     """Tạo các biểu đồ và trực quan hóa cho phân tích mạng."""
@@ -92,7 +93,7 @@ class ChartCreator:
         cmap = plt.cm.get_cmap('YlOrRd')
         colors = [cmap(s/10) for s in avg_severities]
         
-        bars = ax.bar(attack_types, avg_severities, color=colors)
+        bars = ax.bar(attack_types, avg_severities, color=colors, alpha=0.7)
         
         # Thêm giá trị lên các cột
         for bar in bars:
@@ -212,19 +213,20 @@ class ChartCreator:
     
     def create_tcp_flags_chart(self, results: Dict) -> plt.Figure:
         """Tạo biểu đồ phân bố cờ TCP."""
-        if not results:
-            return self._create_empty_chart("Không có dữ liệu về cờ TCP")
-        
-        # Mô phỏng dữ liệu cờ TCP
-        tcp_flags = {
-            "SYN": 120,
-            "ACK": 450,
-            "FIN": 80,
-            "RST": 35,
-            "PSH": 210,
-            "URG": 5,
-            "SYN-ACK": 115
-        }
+        if not results or "tcp_flags" not in results or not results.get("tcp_flags"):
+            # Sử dụng dữ liệu mẫu khi không có dữ liệu thực
+            tcp_flags = {
+                "SYN": 120,
+                "ACK": 450,
+                "FIN": 80,
+                "RST": 35,
+                "PSH": 210,
+                "URG": 5,
+                "SYN-ACK": 115
+            }
+        else:
+            # Sử dụng dữ liệu thực từ kết quả phân tích
+            tcp_flags = results.get("tcp_flags")
         
         # Tạo biểu đồ
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -313,7 +315,7 @@ class ChartCreator:
             return self._create_sample_device_status()
         
         devices = results.get("devices", [])
-        # Tạo biểu đồ với dữ liệu thực tế khi có
+        # Tạo biểu đồ với dữ liệu thực tế
         return self._create_device_status_chart(devices)
     
     def _create_sample_device_status(self) -> plt.Figure:
@@ -440,31 +442,41 @@ class ChartCreator:
             # Tạo biểu đồ chất lượng đường truyền mẫu khi không có dữ liệu thực
             return self._create_sample_link_quality_chart()
         
-        # Tạo biểu đồ với dữ liệu thực tế khi có
-        return self._create_sample_link_quality_chart()
+        # Sử dụng dữ liệu thực về chất lượng đường truyền
+        link_quality = results.get("link_quality")
+        
+        # Kiểm tra cấu trúc dữ liệu để tạo biểu đồ phù hợp
+        if isinstance(link_quality, dict) and all(key in link_quality for key in ["latency", "packet_loss"]):
+            # Tạo biểu đồ từ dữ liệu thực
+            return self._create_link_quality_chart_from_data(link_quality)
+        else:
+            # Nếu dữ liệu không theo định dạng mong đợi, sử dụng mẫu
+            return self._create_sample_link_quality_chart()
     
     def _create_sample_link_quality_chart(self) -> plt.Figure:
-        """Tạo biểu đồ chất lượng đường truyền mẫu."""
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), gridspec_kw={'height_ratios': [2, 1]})
+        """
+        Tạo biểu đồ mẫu cho chất lượng đường truyền khi không có dữ liệu thực.
         
-        # Dữ liệu mẫu
-        timestamps = range(10)  # 10 mốc thời gian
+        Returns:
+            Biểu đồ chất lượng đường truyền mẫu
+        """
+        # Tạo dữ liệu mẫu
+        timestamps = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10']
         
-        # Dữ liệu độ trễ cho các thiết bị
         links = {
-            "Router-Core → Switch-1": [5, 8, 6, 7, 15, 10, 5, 6, 8, 7],
-            "Router-Core → Server-A": [10, 15, 12, 18, 50, 30, 20, 15, 12, 10],
-            "Switch-1 → Server-B": [8, 10, 9, 12, 11, 9, 8, 7, 10, 9],
-            "Server-A → Server-B": [20, 25, 30, 35, 100, 60, 40, 30, 25, 20]
+            "Router-Core → Server-A": [15, 12, 35, 48, 52, 45, 20, 18, 16, 14],
+            "Router-Core → Switch-1": [8, 9, 10, 12, 11, 9, 8, 7, 9, 8],
+            "Switch-1 → Server-B": [12, 15, 18, 22, 20, 18, 16, 15, 14, 12]
         }
         
-        # Dữ liệu mất gói
         packet_loss = {
-            "Router-Core → Switch-1": [0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
-            "Router-Core → Server-A": [0, 1, 0, 2, 5, 3, 1, 0, 0, 0],
-            "Switch-1 → Server-B": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            "Server-A → Server-B": [1, 2, 2, 3, 10, 5, 3, 1, 0, 0]
+            "Router-Core → Server-A": [0, 0, 3, 5, 7, 4, 1, 0, 0, 0],
+            "Router-Core → Switch-1": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            "Switch-1 → Server-B": [0, 1, 2, 2, 1, 1, 0, 0, 0, 0]
         }
+        
+        # Tạo biểu đồ
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), gridspec_kw={'height_ratios': [2, 1]})
         
         # Vẽ biểu đồ độ trễ
         for link_name, latency_values in links.items():
@@ -485,7 +497,7 @@ class ChartCreator:
         # Thêm ngưỡng cảnh báo
         ax1.axhline(y=40, color='r', linestyle='--', alpha=0.5, label="Ngưỡng cảnh báo (40ms)")
         
-        # Tạo legend mà không lặp lại các mục
+        # Tạo legend
         handles, labels = ax1.get_legend_handles_labels()
         unique_handles = []
         unique_labels = []
@@ -498,10 +510,97 @@ class ChartCreator:
         ax1.legend(unique_handles, unique_labels, loc='upper right', fontsize=8)
         
         # Vẽ biểu đồ mất gói
+        bar_width = 0.25
+        x = range(len(timestamps))
+        
+        for i, (link_name, loss_values) in enumerate(packet_loss.items()):
+            pos = [j + i * bar_width for j in x]
+            bars = ax2.bar(pos, loss_values, width=bar_width, label=link_name, alpha=0.7)
+            
+            # Đánh dấu cảnh báo cho các điểm có mất gói > 2%
+            for j, val in enumerate(loss_values):
+                if val > 2:
+                    bars[j].set_color('red')
+        
+        ax2.set_title("Tỷ lệ mất gói (Packet Loss)")
+        ax2.set_xlabel("Thời gian")
+        ax2.set_ylabel("Số gói mất (%)")
+        ax2.set_ylim(bottom=0)
+        
+        # Đặt ticks
+        ax2.set_xticks([j + bar_width for j in x])
+        ax2.set_xticklabels(timestamps)
+        
+        ax2.grid(True, linestyle='--', alpha=0.7)
+        
+        # Thêm ngưỡng cảnh báo
+        ax2.axhline(y=2, color='r', linestyle='--', alpha=0.5, label="Ngưỡng cảnh báo (2%)")
+        
+        ax2.legend(loc='upper right', fontsize=8)
+        
+        plt.tight_layout()
+        return fig
+    
+    def _create_link_quality_chart_from_data(self, link_quality: Dict) -> plt.Figure:
+        """
+        Tạo biểu đồ chất lượng đường truyền từ dữ liệu thực.
+        
+        Args:
+            link_quality: Dict chứa dữ liệu về độ trễ và mất gói
+
+        Returns:
+            Biểu đồ chất lượng đường truyền
+        """
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), gridspec_kw={'height_ratios': [2, 1]})
+        
+        # Trích xuất dữ liệu
+        latency_data = link_quality.get("latency", {})
+        packet_loss_data = link_quality.get("packet_loss", {})
+        
+        # Xử lý dữ liệu độ trễ
+        timestamps = latency_data.get("timestamps", [])
+        links = latency_data.get("links", {})
+        
+        # Vẽ biểu đồ độ trễ
+        for link_name, latency_values in links.items():
+            ax1.plot(timestamps, latency_values, marker='o', label=link_name)
+        
+        # Đánh dấu các điểm có vấn đề (độ trễ > 40ms)
+        for link_name, latency_values in links.items():
+            problem_points = [(t, l) for t, l in zip(timestamps, latency_values) if l > 40]
+            if problem_points:
+                x_points, y_points = zip(*problem_points)
+                ax1.scatter(x_points, y_points, color='red', s=100, zorder=5, marker='X', label=f"{link_name} (Cao)")
+        
+        ax1.set_title("Độ trễ đường truyền (Latency)")
+        ax1.set_ylabel("Độ trễ (ms)")
+        ax1.set_ylim(bottom=0)
+        ax1.grid(True, linestyle='--', alpha=0.7)
+        
+        # Thêm ngưỡng cảnh báo
+        ax1.axhline(y=40, color='r', linestyle='--', alpha=0.5, label="Ngưỡng cảnh báo (40ms)")
+        
+        # Tạo legend
+        handles, labels = ax1.get_legend_handles_labels()
+        unique_handles = []
+        unique_labels = []
+        seen_labels = set()
+        for handle, label in zip(handles, labels):
+            if label not in seen_labels:
+                seen_labels.add(label)
+                unique_handles.append(handle)
+                unique_labels.append(label)
+        ax1.legend(unique_handles, unique_labels, loc='upper right', fontsize=8)
+        
+        # Xử lý dữ liệu mất gói
+        loss_timestamps = packet_loss_data.get("timestamps", [])
+        loss_data = packet_loss_data.get("links", {})
+        
+        # Vẽ biểu đồ mất gói
         bar_width = 0.2
         positions = []
-        for i, (link_name, loss_values) in enumerate(packet_loss.items()):
-            pos = [t + i * bar_width for t in timestamps]
+        for i, (link_name, loss_values) in enumerate(loss_data.items()):
+            pos = [t + i * bar_width for t in range(len(loss_timestamps))]
             positions.append(pos)
             bars = ax2.bar(pos, loss_values, width=bar_width, label=link_name, alpha=0.7)
             
@@ -511,15 +610,15 @@ class ChartCreator:
                     bars[j].set_color('red')
         
         ax2.set_title("Tỷ lệ mất gói (Packet Loss)")
-        ax2.set_xlabel("Thời gian (phút)")
+        ax2.set_xlabel("Thời gian")
         ax2.set_ylabel("Số gói mất (%)")
         ax2.set_ylim(bottom=0)
         
-        # Sửa lỗi: Đảm bảo số lượng tick và số lượng nhãn phải bằng nhau
-        # Đặt ticks ở vị trí giữa của mỗi nhóm thanh
-        tick_positions = [positions[0][i] + (len(packet_loss) * bar_width) / 2 for i in range(len(timestamps))]
-        ax2.set_xticks(tick_positions)
-        ax2.set_xticklabels([str(i) for i in range(10)])  # Chuyển đổi số thành chuỗi
+        # Đặt ticks
+        if positions:
+            tick_positions = [positions[0][i] + (len(loss_data) * bar_width) / 2 for i in range(len(loss_timestamps))]
+            ax2.set_xticks(tick_positions)
+            ax2.set_xticklabels(loss_timestamps)
         
         ax2.grid(True, linestyle='--', alpha=0.7)
         
@@ -544,43 +643,55 @@ class ChartCreator:
             # Tạo biểu đồ cảnh báo ARP mẫu khi không có dữ liệu thực
             return self._create_sample_arp_attack_chart()
         
-        # Tạo biểu đồ với dữ liệu thực tế khi có
-        return self._create_sample_arp_attack_chart()
-    
+        # Sử dụng dữ liệu thực về ARP
+        arp_analysis = results.get("arp_analysis")
+        
+        # Kiểm tra cấu trúc dữ liệu
+        if isinstance(arp_analysis, dict) and "alerts" in arp_analysis and "traffic" in arp_analysis:
+            # Tạo biểu đồ từ dữ liệu thực
+            return self._create_arp_attack_chart_from_data(arp_analysis)
+        else:
+            # Sử dụng biểu đồ mẫu nếu cấu trúc dữ liệu không phù hợp
+            return self._create_sample_arp_attack_chart()
+            
     def _create_sample_arp_attack_chart(self) -> plt.Figure:
-        """Tạo biểu đồ phát hiện tấn công ARP mẫu."""
+        """
+        Tạo biểu đồ mẫu phát hiện tấn công ARP khi không có dữ liệu thực.
+        
+        Returns:
+            Biểu đồ cảnh báo ARP mẫu
+        """
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [1, 2]})
         
-        # Dữ liệu mẫu cho biểu đồ cảnh báo ARP spoofing
-        arp_alerts = [
-            {"time": "10:15:23", "src_ip": "192.168.1.5", "src_mac": "00:1A:2B:3C:4D:5E", 
-             "claimed_ip": "192.168.1.1", "real_mac": "00:11:22:33:44:55", 
-             "alert_type": "ARP Spoofing", "severity": 9},
-            
-            {"time": "10:16:45", "src_ip": "192.168.1.5", "src_mac": "00:1A:2B:3C:4D:5E", 
-             "claimed_ip": "192.168.1.2", "real_mac": "00:AA:BB:CC:DD:EE", 
-             "alert_type": "ARP Spoofing", "severity": 9},
-            
-            {"time": "10:22:18", "src_ip": "192.168.1.10", "src_mac": "00:5E:4D:3C:2B:1A", 
-             "claimed_ip": None, "real_mac": None, 
-             "alert_type": "Excessive ARP Requests", "severity": 6},
-            
-            {"time": "10:25:32", "src_ip": "192.168.1.5", "src_mac": "00:1A:2B:3C:4D:5E", 
-             "claimed_ip": "192.168.1.254", "real_mac": "00:FF:AA:BB:CC:DD", 
-             "alert_type": "ARP Spoofing", "severity": 9},
-            
-            {"time": "10:30:15", "src_ip": "192.168.1.15", "src_mac": "00:EE:DD:CC:BB:AA", 
-             "claimed_ip": None, "real_mac": None, 
-             "alert_type": "Gratuitous ARP", "severity": 4}
+        # Tạo dữ liệu mẫu cho cảnh báo
+        alerts = [
+            {
+                "time": "11:25:30",
+                "src_ip": "192.168.1.105",
+                "src_mac": "00:0c:29:1a:2b:3c",
+                "claimed_ip": "192.168.1.1",
+                "real_mac": "00:1a:2b:3c:4d:5e",
+                "alert_type": "ARP Spoofing",
+                "severity": 9
+            },
+            {
+                "time": "11:26:15",
+                "src_ip": "192.168.1.110",
+                "src_mac": "00:0c:29:5e:6f:7g",
+                "claimed_ip": "192.168.1.1",
+                "real_mac": "00:1a:2b:3c:4d:5e",
+                "alert_type": "ARP Spoofing",
+                "severity": 8
+            }
         ]
         
-        # Dữ liệu mẫu cho số lượng gói ARP theo thời gian
-        timestamps = ["10:05", "10:10", "10:15", "10:20", "10:25", "10:30", "10:35", "10:40"]
-        arp_requests = [12, 15, 45, 60, 52, 40, 25, 18]
-        arp_replies = [10, 12, 40, 55, 48, 38, 20, 15]
-        arp_gratuitous = [0, 0, 2, 5, 3, 5, 1, 0]
+        # Tạo dữ liệu mẫu cho lưu lượng
+        timestamps = ['11:20', '11:21', '11:22', '11:23', '11:24', '11:25', '11:26', '11:27', '11:28', '11:29']
+        arp_requests = [5, 8, 12, 15, 45, 65, 40, 20, 10, 5]
+        arp_replies = [3, 5, 10, 12, 35, 55, 30, 15, 8, 3]
+        arp_gratuitous = [0, 0, 0, 1, 5, 8, 2, 0, 0, 0]
         
-        # Vẽ bảng cảnh báo ARP
+        # Vẽ bảng cảnh báo
         ax1.axis('tight')
         ax1.axis('off')
         
@@ -589,7 +700,7 @@ class ChartCreator:
         data = []
         colors = []
         
-        for alert in arp_alerts:
+        for alert in alerts:
             # Định dạng dữ liệu
             claimed_ip = alert.get("claimed_ip", "N/A")
             real_mac = alert.get("real_mac", "N/A")
@@ -657,7 +768,7 @@ class ChartCreator:
         ax2.bar([i + bar_width for i in x], arp_gratuitous, bar_width, label='Gratuitous ARP', color='#e74c3c')
         
         # Đánh dấu vùng bất thường
-        ax2.axvspan(2, 5, alpha=0.2, color='red', label='Vùng bất thường')
+        ax2.axvspan(4, 6, alpha=0.2, color='red', label='Vùng bất thường')
         
         ax2.set_xlabel('Thời gian')
         ax2.set_ylabel('Số lượng gói tin')
@@ -666,6 +777,132 @@ class ChartCreator:
         ax2.set_xticklabels(timestamps)
         ax2.legend()
         ax2.grid(axis='y', linestyle='--', alpha=0.7)
+        
+        plt.tight_layout()
+        return fig
+    
+    def _create_arp_attack_chart_from_data(self, arp_analysis: Dict) -> plt.Figure:
+        """
+        Tạo biểu đồ phát hiện tấn công ARP từ dữ liệu thực.
+        
+        Args:
+            arp_analysis: Dict chứa dữ liệu phân tích ARP
+
+        Returns:
+            Biểu đồ cảnh báo ARP
+        """
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [1, 2]})
+        
+        # Trích xuất dữ liệu cảnh báo
+        arp_alerts = arp_analysis.get("alerts", [])
+        
+        # Trích xuất dữ liệu lưu lượng
+        traffic_data = arp_analysis.get("traffic", {})
+        timestamps = traffic_data.get("timestamps", [])
+        arp_requests = traffic_data.get("requests", [])
+        arp_replies = traffic_data.get("replies", [])
+        arp_gratuitous = traffic_data.get("gratuitous", [])
+        
+        # Vẽ bảng cảnh báo ARP
+        ax1.axis('tight')
+        ax1.axis('off')
+        
+        # Chuẩn bị dữ liệu cho bảng
+        headers = ["Thời gian", "IP nguồn", "MAC nguồn", "IP được xác nhận", "MAC thực", "Loại cảnh báo", "Mức độ"]
+        data = []
+        colors = []
+        
+        for alert in arp_alerts:
+            # Định dạng dữ liệu
+            claimed_ip = alert.get("claimed_ip", "N/A")
+            real_mac = alert.get("real_mac", "N/A")
+            severity = alert.get("severity", 0)
+            
+            # Chuyển mức độ thành biểu tượng
+            if severity >= 8:
+                severity_icon = "🔴 " + str(severity)
+            elif severity >= 5:
+                severity_icon = "🟠 " + str(severity)
+            else:
+                severity_icon = "🟡 " + str(severity)
+            
+            data.append([
+                alert.get("time", ""),
+                alert.get("src_ip", ""),
+                alert.get("src_mac", ""),
+                claimed_ip,
+                real_mac,
+                alert.get("alert_type", ""),
+                severity_icon
+            ])
+            
+            # Màu nền dựa trên mức độ nghiêm trọng
+            if severity >= 8:
+                colors.append("#ffcccc")  # Đỏ nhạt
+            elif severity >= 5:
+                colors.append("#ffe0cc")  # Cam nhạt
+            else:
+                colors.append("#ffffcc")  # Vàng nhạt
+        
+        # Tạo bảng nếu có dữ liệu
+        if data:
+            table = ax1.table(
+                cellText=data,
+                colLabels=headers,
+                loc='center',
+                cellLoc='center'
+            )
+            
+            # Định dạng bảng
+            table.auto_set_font_size(False)
+            table.set_fontsize(9)
+            table.scale(1, 1.5)
+            
+            # Đặt màu nền cho các hàng dữ liệu
+            for i in range(len(data)):
+                for j in range(len(headers)):
+                    cell = table[(i+1, j)]  # +1 vì hàng 0 là header
+                    cell.set_facecolor(colors[i])
+            
+            # Định dạng header
+            for j, header in enumerate(headers):
+                cell = table[(0, j)]
+                cell.set_facecolor('#4b6584')  # Màu xanh đậm
+                cell.set_text_props(color='white')
+        else:
+            ax1.text(0.5, 0.5, "Không có cảnh báo ARP", ha='center', va='center', fontsize=14)
+        
+        ax1.set_title("Cảnh báo tấn công ARP", fontsize=14, pad=20)
+        
+        # Vẽ biểu đồ số lượng gói ARP theo thời gian
+        if timestamps and (arp_requests or arp_replies or arp_gratuitous):
+            bar_width = 0.25
+            x = range(len(timestamps))
+            
+            if arp_requests:
+                ax2.bar([i - bar_width for i in x], arp_requests, bar_width, label='ARP Requests', color='#3498db')
+            if arp_replies:
+                ax2.bar([i for i in x], arp_replies, bar_width, label='ARP Replies', color='#2ecc71')
+            if arp_gratuitous:
+                ax2.bar([i + bar_width for i in x], arp_gratuitous, bar_width, label='Gratuitous ARP', color='#e74c3c')
+            
+            # Đánh dấu vùng bất thường nếu có
+            anomaly_start = traffic_data.get("anomaly_start", -1)
+            anomaly_end = traffic_data.get("anomaly_end", -1)
+            if anomaly_start >= 0 and anomaly_end >= 0 and anomaly_start < len(timestamps) and anomaly_end < len(timestamps):
+                ax2.axvspan(anomaly_start, anomaly_end, alpha=0.2, color='red', label='Vùng bất thường')
+            
+            ax2.set_xlabel('Thời gian')
+            ax2.set_ylabel('Số lượng gói tin')
+            ax2.set_title('Phân tích lưu lượng ARP theo thời gian')
+            ax2.set_xticks(x)
+            ax2.set_xticklabels(timestamps)
+            ax2.legend()
+            ax2.grid(axis='y', linestyle='--', alpha=0.7)
+        else:
+            ax2.text(0.5, 0.5, "Không có dữ liệu lưu lượng ARP", ha='center', va='center', fontsize=14)
+            ax2.set_title('Phân tích lưu lượng ARP theo thời gian')
+            ax2.axis('off')
         
         plt.tight_layout()
         return fig
@@ -684,91 +921,76 @@ class ChartCreator:
             # Tạo biểu đồ phát hiện bất thường ICMP mẫu khi không có dữ liệu thực
             return self._create_sample_icmp_anomaly_chart()
         
-        # Tạo biểu đồ với dữ liệu thực tế khi có
-        return self._create_sample_icmp_anomaly_chart()
+        # Sử dụng dữ liệu thực về ICMP
+        icmp_analysis = results.get("icmp_analysis")
+        
+        # Kiểm tra cấu trúc dữ liệu
+        if isinstance(icmp_analysis, dict) and all(key in icmp_analysis for key in ["alerts", "traffic"]):
+            # Tạo biểu đồ từ dữ liệu thực
+            return self._create_icmp_anomaly_chart_from_data(icmp_analysis)
+        else:
+            # Sử dụng biểu đồ mẫu nếu cấu trúc dữ liệu không phù hợp
+            return self._create_sample_icmp_anomaly_chart()
     
     def _create_sample_icmp_anomaly_chart(self) -> plt.Figure:
-        """Tạo biểu đồ phát hiện bất thường ICMP mẫu."""
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [2, 1]})
+        """
+        Tạo biểu đồ mẫu phát hiện bất thường ICMP khi không có dữ liệu thực.
         
-        # Dữ liệu mẫu cho biểu đồ số lượng gói ICMP theo thời gian và loại
-        timestamps = ["10:05", "10:10", "10:15", "10:20", "10:25", "10:30", "10:35", "10:40"]
-        icmp_echo_request = [15, 25, 120, 180, 150, 65, 30, 20]
-        icmp_echo_reply = [12, 20, 90, 140, 120, 50, 25, 18]
-        icmp_dest_unreachable = [2, 5, 15, 25, 20, 12, 5, 3]
-        icmp_time_exceeded = [1, 2, 5, 8, 6, 3, 2, 1]
-        icmp_other = [0, 1, 3, 10, 8, 4, 1, 0]
+        Returns:
+            Biểu đồ phát hiện bất thường ICMP mẫu
+        """
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [1, 2]})
         
-        # Vẽ biểu đồ số lượng gói ICMP theo thời gian và loại
-        ax1.plot(timestamps, icmp_echo_request, 'o-', label='Echo Request', color='#3498db')
-        ax1.plot(timestamps, icmp_echo_reply, 'o-', label='Echo Reply', color='#2ecc71')
-        ax1.plot(timestamps, icmp_dest_unreachable, 'o-', label='Destination Unreachable', color='#e74c3c')
-        ax1.plot(timestamps, icmp_time_exceeded, 'o-', label='Time Exceeded', color='#f39c12')
-        ax1.plot(timestamps, icmp_other, 'o-', label='Khác', color='#9b59b6')
-        
-        # Đánh dấu vùng bất thường
-        ax1.axvspan(2, 5, alpha=0.2, color='red', label='Vùng bất thường')
-        
-        # Cấu hình biểu đồ
-        ax1.set_xlabel('Thời gian')
-        ax1.set_ylabel('Số lượng gói tin')
-        ax1.set_title('Phân tích lưu lượng ICMP theo thời gian và loại')
-        ax1.legend(loc='upper right')
-        ax1.grid(True, linestyle='--', alpha=0.7)
-        
-        # Thêm chú thích cho điểm bất thường
-        ax1.annotate('ICMP Flood', xy=(3, 180), xytext=(3.5, 200),
-                    arrowprops=dict(facecolor='black', shrink=0.05, width=1.5))
-        
-        # Dữ liệu mẫu cho bảng cảnh báo ICMP
-        icmp_alerts = [
-            {"time": "10:15:23", "src_ip": "172.16.5.10", "dst_ip": "192.168.1.1", 
-             "icmp_type": 8, "icmp_code": 0, "payload_size": 2048,
-             "alert_type": "ICMP Echo Request Flood", "severity": 8},
-            
-            {"time": "10:16:45", "src_ip": "172.16.5.11", "dst_ip": "192.168.1.1", 
-             "icmp_type": 8, "icmp_code": 0, "payload_size": 2048,
-             "alert_type": "ICMP Echo Request Flood", "severity": 8},
-            
-            {"time": "10:22:18", "src_ip": "192.168.1.5", "dst_ip": "8.8.8.8", 
-             "icmp_type": 3, "icmp_code": 1, "payload_size": 560,
-             "alert_type": "Bất thường Destination Unreachable", "severity": 5},
-            
-            {"time": "10:25:32", "src_ip": "192.168.1.10", "dst_ip": "192.168.1.100", 
-             "icmp_type": 8, "icmp_code": 0, "payload_size": 4096,
-             "alert_type": "ICMP Tunneling Suspected", "severity": 7}
+        # Tạo dữ liệu mẫu cho cảnh báo
+        alerts = [
+            {
+                "time": "10:15:30",
+                "src_ip": "10.0.0.25",
+                "dst_ip": "192.168.1.1",
+                "icmp_type": 8,
+                "icmp_code": 0,
+                "payload_size": 1500,
+                "alert_type": "ICMP Tunneling Suspected",
+                "severity": 7
+            },
+            {
+                "time": "10:20:15",
+                "src_ip": "10.0.0.15",
+                "dst_ip": "192.168.1.0/24",
+                "icmp_type": 8,
+                "icmp_code": 0,
+                "payload_size": 64,
+                "alert_type": "ICMP Echo Request Flood",
+                "severity": 8
+            }
         ]
         
-        # Vẽ bảng cảnh báo ICMP
-        ax2.axis('tight')
-        ax2.axis('off')
+        # Tạo dữ liệu mẫu cho lưu lượng
+        timestamps = ['10:10', '10:12', '10:14', '10:16', '10:18', '10:20', '10:22', '10:24', '10:26', '10:28']
+        echo_requests = [10, 12, 15, 20, 35, 85, 45, 25, 15, 12]
+        echo_replies = [8, 10, 12, 18, 25, 40, 30, 20, 12, 10]
+        dest_unreachable = [0, 1, 0, 2, 5, 10, 3, 1, 0, 0]
+        time_exceeded = [0, 0, 0, 0, 1, 3, 1, 0, 0, 0]
+        
+        # Vẽ bảng cảnh báo
+        ax1.axis('tight')
+        ax1.axis('off')
         
         # Chuẩn bị dữ liệu cho bảng
         headers = ["Thời gian", "IP nguồn", "IP đích", "Loại ICMP", "Kích thước", "Loại cảnh báo", "Mức độ"]
         data = []
         colors = []
         
-        for alert in icmp_alerts:
+        for alert in alerts:
             # Định dạng dữ liệu
-            icmp_type = alert.get("icmp_type", 0)
-            icmp_code = alert.get("icmp_code", 0)
-            icmp_type_str = f"{icmp_type}/{icmp_code}"
+            icmp_type = f"Type {alert.get('icmp_type', 0)}"
+            if alert.get('icmp_code', 0) > 0:
+                icmp_type += f"/Code {alert.get('icmp_code', 0)}"
             
-            # Thêm nhãn loại ICMP cho dễ đọc
-            if icmp_type == 8 and icmp_code == 0:
-                icmp_type_str += " (Echo Request)"
-            elif icmp_type == 0 and icmp_code == 0:
-                icmp_type_str += " (Echo Reply)"
-            elif icmp_type == 3:
-                icmp_type_str += " (Dest Unreachable)"
-            elif icmp_type == 11:
-                icmp_type_str += " (Time Exceeded)"
-            
-            # Kích thước payload
             payload_size = f"{alert.get('payload_size', 0)} bytes"
-            
-            # Mức độ nghiêm trọng
             severity = alert.get("severity", 0)
+            
+            # Chuyển mức độ thành biểu tượng
             if severity >= 8:
                 severity_icon = "🔴 " + str(severity)
             elif severity >= 5:
@@ -780,7 +1002,7 @@ class ChartCreator:
                 alert.get("time", ""),
                 alert.get("src_ip", ""),
                 alert.get("dst_ip", ""),
-                icmp_type_str,
+                icmp_type,
                 payload_size,
                 alert.get("alert_type", ""),
                 severity_icon
@@ -795,7 +1017,7 @@ class ChartCreator:
                 colors.append("#ffffcc")  # Vàng nhạt
         
         # Tạo bảng
-        table = ax2.table(
+        table = ax1.table(
             cellText=data,
             colLabels=headers,
             loc='center',
@@ -819,7 +1041,183 @@ class ChartCreator:
             cell.set_facecolor('#4b6584')  # Màu xanh đậm
             cell.set_text_props(color='white')
         
-        ax2.set_title("Cảnh báo bất thường ICMP", fontsize=14, pad=20)
+        ax1.set_title("Cảnh báo bất thường ICMP", fontsize=14, pad=20)
+        
+        # Vẽ biểu đồ số lượng gói ICMP theo thời gian
+        x = range(len(timestamps))
+        
+        ax2.plot(x, echo_requests, marker='o', linewidth=2, label='Echo Requests', color='#3498db')
+        ax2.plot(x, echo_replies, marker='s', linewidth=2, label='Echo Replies', color='#2ecc71')
+        ax2.plot(x, dest_unreachable, marker='^', linewidth=2, label='Dest Unreachable', color='#e74c3c')
+        ax2.plot(x, time_exceeded, marker='D', linewidth=2, label='Time Exceeded', color='#f39c12')
+        
+        # Đánh dấu vùng bất thường
+        ax2.axvspan(4, 6, alpha=0.2, color='red', label='Vùng bất thường')
+        
+        # Đánh dấu đỉnh đột biến
+        peak_index = echo_requests.index(max(echo_requests))
+        ax2.annotate('Peak Traffic', 
+                   xy=(peak_index, echo_requests[peak_index]),
+                   xytext=(peak_index-1, echo_requests[peak_index]+15),
+                   arrowprops=dict(arrowstyle='->', lw=1.5, color='red'),
+                   fontsize=10, color='red')
+        
+        ax2.set_xlabel('Thời gian')
+        ax2.set_ylabel('Số lượng gói tin')
+        ax2.set_title('Phân tích lưu lượng ICMP theo thời gian')
+        ax2.set_xticks(x)
+        ax2.set_xticklabels(timestamps)
+        ax2.legend()
+        ax2.grid(True, linestyle='--', alpha=0.7)
+        
+        plt.tight_layout()
+        return fig
+    
+    def _create_icmp_anomaly_chart_from_data(self, icmp_analysis: Dict) -> plt.Figure:
+        """
+        Tạo biểu đồ phát hiện bất thường ICMP từ dữ liệu thực.
+        
+        Args:
+            icmp_analysis: Dict chứa dữ liệu phân tích ICMP
+
+        Returns:
+            Biểu đồ phát hiện bất thường ICMP
+        """
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [1, 2]})
+        
+        # Trích xuất dữ liệu cảnh báo
+        icmp_alerts = icmp_analysis.get("alerts", [])
+        
+        # Trích xuất dữ liệu lưu lượng
+        traffic_data = icmp_analysis.get("traffic", {})
+        timestamps = traffic_data.get("timestamps", [])
+        echo_requests = traffic_data.get("echo_requests", [])
+        echo_replies = traffic_data.get("echo_replies", [])
+        dest_unreachable = traffic_data.get("dest_unreachable", [])
+        time_exceeded = traffic_data.get("time_exceeded", [])
+        other_types = traffic_data.get("other_types", [])
+        
+        # Vẽ bảng cảnh báo ICMP
+        ax1.axis('tight')
+        ax1.axis('off')
+        
+        # Chuẩn bị dữ liệu cho bảng
+        headers = ["Thời gian", "IP nguồn", "IP đích", "Loại ICMP", "Kích thước", "Loại cảnh báo", "Mức độ"]
+        data = []
+        colors = []
+        
+        for alert in icmp_alerts:
+            # Định dạng dữ liệu
+            icmp_type = "N/A"
+            if isinstance(alert.get("icmp_type"), int):
+                icmp_type = f"Type {alert.get('icmp_type')}"
+                if alert.get('icmp_code') is not None:
+                    icmp_type += f"/Code {alert.get('icmp_code')}"
+            elif alert.get("icmp_type") == "Multiple":
+                icmp_type = "Multiple"
+            
+            payload_size = f"{alert.get('payload_size', 0)} bytes"
+            severity = alert.get("severity", 0)
+            
+            # Chuyển mức độ thành biểu tượng
+            if severity >= 8:
+                severity_icon = "🔴 " + str(severity)
+            elif severity >= 5:
+                severity_icon = "🟠 " + str(severity)
+            else:
+                severity_icon = "🟡 " + str(severity)
+            
+            data.append([
+                alert.get("time", ""),
+                alert.get("src_ip", ""),
+                alert.get("dst_ip", ""),
+                icmp_type,
+                payload_size,
+                alert.get("alert_type", ""),
+                severity_icon
+            ])
+            
+            # Màu nền dựa trên mức độ nghiêm trọng
+            if severity >= 8:
+                colors.append("#ffcccc")  # Đỏ nhạt
+            elif severity >= 5:
+                colors.append("#ffe0cc")  # Cam nhạt
+            else:
+                colors.append("#ffffcc")  # Vàng nhạt
+        
+        # Tạo bảng nếu có dữ liệu
+        if data:
+            table = ax1.table(
+                cellText=data,
+                colLabels=headers,
+                loc='center',
+                cellLoc='center'
+            )
+            
+            # Định dạng bảng
+            table.auto_set_font_size(False)
+            table.set_fontsize(9)
+            table.scale(1, 1.5)
+            
+            # Đặt màu nền cho các hàng dữ liệu
+            for i in range(len(data)):
+                for j in range(len(headers)):
+                    cell = table[(i+1, j)]  # +1 vì hàng 0 là header
+                    cell.set_facecolor(colors[i])
+            
+            # Định dạng header
+            for j, header in enumerate(headers):
+                cell = table[(0, j)]
+                cell.set_facecolor('#4b6584')  # Màu xanh đậm
+                cell.set_text_props(color='white')
+        else:
+            ax1.text(0.5, 0.5, "Không có cảnh báo ICMP", ha='center', va='center', fontsize=14)
+        
+        ax1.set_title("Cảnh báo bất thường ICMP", fontsize=14, pad=20)
+        
+        # Vẽ biểu đồ số lượng gói ICMP theo thời gian
+        if timestamps and any([echo_requests, echo_replies, dest_unreachable, time_exceeded, other_types]):
+            x = range(len(timestamps))
+            
+            if echo_requests:
+                ax2.plot(x, echo_requests, marker='o', linewidth=2, label='Echo Requests', color='#3498db')
+            if echo_replies:
+                ax2.plot(x, echo_replies, marker='s', linewidth=2, label='Echo Replies', color='#2ecc71')
+            if dest_unreachable:
+                ax2.plot(x, dest_unreachable, marker='^', linewidth=2, label='Dest Unreachable', color='#e74c3c')
+            if time_exceeded:
+                ax2.plot(x, time_exceeded, marker='D', linewidth=2, label='Time Exceeded', color='#f39c12')
+            if other_types:
+                ax2.plot(x, other_types, marker='X', linewidth=2, label='Other Types', color='#8e44ad')
+            
+            # Đánh dấu vùng bất thường nếu có
+            anomaly_start = traffic_data.get("anomaly_start", -1)
+            anomaly_end = traffic_data.get("anomaly_end", -1)
+            if anomaly_start >= 0 and anomaly_end >= 0 and anomaly_start < len(timestamps) and anomaly_end < len(timestamps):
+                ax2.axvspan(anomaly_start, anomaly_end, alpha=0.2, color='red', label='Vùng bất thường')
+            
+            # Đánh dấu đỉnh đột biến nếu có
+            if echo_requests:
+                peak_value = max(echo_requests)
+                if peak_value > 50:  # Ngưỡng đỉnh đột biến
+                    peak_index = echo_requests.index(peak_value)
+                    ax2.annotate('Peak Traffic', 
+                               xy=(peak_index, peak_value),
+                               xytext=(peak_index-1, peak_value+15),
+                               arrowprops=dict(arrowstyle='->', lw=1.5, color='red'),
+                               fontsize=10, color='red')
+            
+            ax2.set_xlabel('Thời gian')
+            ax2.set_ylabel('Số lượng gói tin')
+            ax2.set_title('Phân tích lưu lượng ICMP theo thời gian')
+            ax2.set_xticks(x)
+            ax2.set_xticklabels(timestamps)
+            ax2.legend()
+            ax2.grid(True, linestyle='--', alpha=0.7)
+        else:
+            ax2.text(0.5, 0.5, "Không có dữ liệu lưu lượng ICMP", ha='center', va='center', fontsize=14)
+            ax2.set_title('Phân tích lưu lượng ICMP theo thời gian')
+            ax2.axis('off')
         
         plt.tight_layout()
         return fig
@@ -832,35 +1230,62 @@ class ChartCreator:
             results: Kết quả phân tích gói tin
 
         Returns:
-            Biểu đồ phát hiện tấn công DHCP
+            Biểu đồ cảnh báo DHCP
         """
         if not results or "dhcp_analysis" not in results or not results.get("dhcp_analysis"):
-            # Tạo biểu đồ phát hiện tấn công DHCP mẫu khi không có dữ liệu thực
+            # Tạo biểu đồ cảnh báo DHCP mẫu khi không có dữ liệu thực
             return self._create_sample_dhcp_attack_chart()
         
-        # Tạo biểu đồ với dữ liệu thực tế khi có
-        return self._create_sample_dhcp_attack_chart()
+        # Sử dụng dữ liệu thực về DHCP
+        dhcp_analysis = results.get("dhcp_analysis")
+        
+        # Kiểm tra cấu trúc dữ liệu
+        if isinstance(dhcp_analysis, dict) and "alerts" in dhcp_analysis and "traffic" in dhcp_analysis:
+            # Tạo biểu đồ từ dữ liệu thực
+            return self._create_dhcp_attack_chart_from_data(dhcp_analysis)
+        else:
+            # Sử dụng biểu đồ mẫu nếu cấu trúc dữ liệu không phù hợp
+            return self._create_sample_dhcp_attack_chart()
     
     def _create_sample_dhcp_attack_chart(self) -> plt.Figure:
-        """Tạo biểu đồ phát hiện tấn công DHCP mẫu."""
+        """
+        Tạo biểu đồ mẫu phát hiện tấn công DHCP khi không có dữ liệu thực.
+        
+        Returns:
+            Biểu đồ cảnh báo DHCP mẫu
+        """
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [1, 2]})
         
-        # Dữ liệu mẫu cho bảng cảnh báo DHCP
-        dhcp_alerts = [
-            {"time": "10:15:23", "src_ip": "0.0.0.0", "src_mac": "00:1A:2B:3C:4D:5E", 
-             "server_ip": "192.168.1.200", "server_mac": "00:AA:BB:CC:DD:EE", 
-             "alert_type": "Rogue DHCP Server", "severity": 9},
-            
-            {"time": "10:18:45", "src_ip": "0.0.0.0", "src_mac": "00:5E:4D:3C:2B:1A", 
-             "server_ip": "192.168.1.1", "server_mac": "00:11:22:33:44:55", 
-             "alert_type": "DHCP Starvation", "severity": 7},
-            
-            {"time": "10:22:18", "src_ip": "0.0.0.0", "src_mac": "00:1A:2B:3C:4D:5E", 
-             "server_ip": "192.168.1.1", "server_mac": "00:11:22:33:44:55", 
-             "alert_type": "DHCP ACK Injection", "severity": 8}
+        # Tạo dữ liệu mẫu cho cảnh báo
+        alerts = [
+            {
+                "time": "09:45:30",
+                "src_ip": "10.0.0.25",
+                "src_mac": "00:1c:23:4d:5e:6f",
+                "server_ip": "192.168.1.5",
+                "server_mac": "00:aa:bb:cc:dd:ee",
+                "alert_type": "DHCP Starvation",
+                "severity": 7
+            },
+            {
+                "time": "09:50:15",
+                "src_ip": "10.0.0.15",
+                "src_mac": "00:2d:3e:4f:5g:6h",
+                "server_ip": "192.168.1.1, 192.168.1.250",
+                "server_mac": "Multiple",
+                "alert_type": "Multiple DHCP Servers",
+                "severity": 6
+            }
         ]
         
-        # Vẽ bảng cảnh báo DHCP
+        # Tạo dữ liệu mẫu cho lưu lượng
+        timestamps = ['09:40', '09:42', '09:44', '09:46', '09:48', '09:50', '09:52', '09:54', '09:56', '09:58']
+        dhcp_discover = [5, 8, 12, 55, 85, 45, 25, 15, 10, 5]
+        dhcp_offer = [3, 6, 10, 45, 75, 40, 20, 12, 8, 3]
+        dhcp_request = [2, 5, 8, 35, 65, 30, 18, 10, 5, 2]
+        dhcp_ack = [2, 5, 8, 35, 60, 28, 15, 10, 5, 2]
+        
+        # Vẽ bảng cảnh báo
         ax1.axis('tight')
         ax1.axis('off')
         
@@ -869,9 +1294,11 @@ class ChartCreator:
         data = []
         colors = []
         
-        for alert in dhcp_alerts:
-            # Mức độ nghiêm trọng
+        for alert in alerts:
+            # Định dạng dữ liệu
             severity = alert.get("severity", 0)
+            
+            # Chuyển mức độ thành biểu tượng
             if severity >= 8:
                 severity_icon = "🔴 " + str(severity)
             elif severity >= 5:
@@ -924,40 +1351,152 @@ class ChartCreator:
         
         ax1.set_title("Cảnh báo tấn công DHCP", fontsize=14, pad=20)
         
-        # Dữ liệu mẫu cho số lượng gói DHCP theo thời gian và loại
-        timestamps = ["10:05", "10:10", "10:15", "10:20", "10:25", "10:30", "10:35", "10:40"]
-        dhcp_discover = [5, 8, 50, 80, 60, 30, 10, 5]
-        dhcp_offer = [4, 7, 45, 75, 55, 28, 8, 4]
-        dhcp_request = [4, 7, 40, 70, 50, 25, 8, 3]
-        dhcp_ack = [4, 7, 40, 70, 50, 25, 8, 3]
-        
         # Vẽ biểu đồ số lượng gói DHCP theo thời gian
-        bar_width = 0.2
         x = range(len(timestamps))
         
-        ax2.bar([i - 1.5*bar_width for i in x], dhcp_discover, bar_width, label='DHCP Discover', color='#3498db')
-        ax2.bar([i - 0.5*bar_width for i in x], dhcp_offer, bar_width, label='DHCP Offer', color='#2ecc71')
-        ax2.bar([i + 0.5*bar_width for i in x], dhcp_request, bar_width, label='DHCP Request', color='#f39c12')
-        ax2.bar([i + 1.5*bar_width for i in x], dhcp_ack, bar_width, label='DHCP ACK', color='#9b59b6')
+        width = 0.2
+        ax2.bar([i - width*1.5 for i in x], dhcp_discover, width, label='DHCP Discover', color='#3498db')
+        ax2.bar([i - width*0.5 for i in x], dhcp_offer, width, label='DHCP Offer', color='#2ecc71')
+        ax2.bar([i + width*0.5 for i in x], dhcp_request, width, label='DHCP Request', color='#e74c3c')
+        ax2.bar([i + width*1.5 for i in x], dhcp_ack, width, label='DHCP ACK', color='#f39c12')
         
         # Đánh dấu vùng bất thường
-        ax2.axvspan(2, 5, alpha=0.2, color='red', label='Vùng bất thường')
+        ax2.axvspan(3, 5, alpha=0.2, color='red', label='Vùng bất thường')
         
-        # Thêm chú thích cho điểm bất thường
-        ax2.annotate('DHCP Starvation Attack', xy=(3, 80), xytext=(4, 90),
-                    arrowprops=dict(facecolor='black', shrink=0.05, width=1.5))
-        
-        # Thêm đường ngưỡng cảnh báo
-        ax2.axhline(y=30, color='r', linestyle='--', alpha=0.5, label='Ngưỡng cảnh báo')
-        
-        # Cấu hình biểu đồ
         ax2.set_xlabel('Thời gian')
         ax2.set_ylabel('Số lượng gói tin')
         ax2.set_title('Phân tích lưu lượng DHCP theo thời gian')
         ax2.set_xticks(x)
         ax2.set_xticklabels(timestamps)
-        ax2.legend(loc='upper right')
+        ax2.legend()
         ax2.grid(axis='y', linestyle='--', alpha=0.7)
+        
+        plt.tight_layout()
+        return fig
+    
+    def _create_dhcp_attack_chart_from_data(self, dhcp_analysis: Dict) -> plt.Figure:
+        """
+        Tạo biểu đồ phát hiện tấn công DHCP từ dữ liệu thực.
+        
+        Args:
+            dhcp_analysis: Dict chứa dữ liệu phân tích DHCP
+
+        Returns:
+            Biểu đồ cảnh báo DHCP
+        """
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [1, 2]})
+        
+        # Trích xuất dữ liệu cảnh báo
+        dhcp_alerts = dhcp_analysis.get("alerts", [])
+        
+        # Trích xuất dữ liệu lưu lượng
+        traffic_data = dhcp_analysis.get("traffic", {})
+        timestamps = traffic_data.get("timestamps", [])
+        dhcp_discover = traffic_data.get("discover", [])
+        dhcp_offer = traffic_data.get("offer", [])
+        dhcp_request = traffic_data.get("request", [])
+        dhcp_ack = traffic_data.get("ack", [])
+        
+        # Vẽ bảng cảnh báo DHCP
+        ax1.axis('tight')
+        ax1.axis('off')
+        
+        # Chuẩn bị dữ liệu cho bảng
+        headers = ["Thời gian", "IP nguồn", "MAC nguồn", "IP server", "MAC server", "Loại cảnh báo", "Mức độ"]
+        data = []
+        colors = []
+        
+        for alert in dhcp_alerts:
+            # Định dạng dữ liệu
+            severity = alert.get("severity", 0)
+            
+            # Chuyển mức độ thành biểu tượng
+            if severity >= 8:
+                severity_icon = "🔴 " + str(severity)
+            elif severity >= 5:
+                severity_icon = "🟠 " + str(severity)
+            else:
+                severity_icon = "🟡 " + str(severity)
+            
+            data.append([
+                alert.get("time", ""),
+                alert.get("src_ip", ""),
+                alert.get("src_mac", ""),
+                alert.get("server_ip", ""),
+                alert.get("server_mac", ""),
+                alert.get("alert_type", ""),
+                severity_icon
+            ])
+            
+            # Màu nền dựa trên mức độ nghiêm trọng
+            if severity >= 8:
+                colors.append("#ffcccc")  # Đỏ nhạt
+            elif severity >= 5:
+                colors.append("#ffe0cc")  # Cam nhạt
+            else:
+                colors.append("#ffffcc")  # Vàng nhạt
+        
+        # Tạo bảng nếu có dữ liệu
+        if data:
+            table = ax1.table(
+                cellText=data,
+                colLabels=headers,
+                loc='center',
+                cellLoc='center'
+            )
+            
+            # Định dạng bảng
+            table.auto_set_font_size(False)
+            table.set_fontsize(9)
+            table.scale(1, 1.5)
+            
+            # Đặt màu nền cho các hàng dữ liệu
+            for i in range(len(data)):
+                for j in range(len(headers)):
+                    cell = table[(i+1, j)]  # +1 vì hàng 0 là header
+                    cell.set_facecolor(colors[i])
+            
+            # Định dạng header
+            for j, header in enumerate(headers):
+                cell = table[(0, j)]
+                cell.set_facecolor('#4b6584')  # Màu xanh đậm
+                cell.set_text_props(color='white')
+        else:
+            ax1.text(0.5, 0.5, "Không có cảnh báo DHCP", ha='center', va='center', fontsize=14)
+        
+        ax1.set_title("Cảnh báo tấn công DHCP", fontsize=14, pad=20)
+        
+        # Vẽ biểu đồ số lượng gói DHCP theo thời gian
+        if timestamps and any([dhcp_discover, dhcp_offer, dhcp_request, dhcp_ack]):
+            x = range(len(timestamps))
+            
+            width = 0.2
+            if dhcp_discover:
+                ax2.bar([i - width*1.5 for i in x], dhcp_discover, width, label='DHCP Discover', color='#3498db')
+            if dhcp_offer:
+                ax2.bar([i - width*0.5 for i in x], dhcp_offer, width, label='DHCP Offer', color='#2ecc71')
+            if dhcp_request:
+                ax2.bar([i + width*0.5 for i in x], dhcp_request, width, label='DHCP Request', color='#e74c3c')
+            if dhcp_ack:
+                ax2.bar([i + width*1.5 for i in x], dhcp_ack, width, label='DHCP ACK', color='#f39c12')
+            
+            # Đánh dấu vùng bất thường nếu có
+            anomaly_start = traffic_data.get("anomaly_start", -1)
+            anomaly_end = traffic_data.get("anomaly_end", -1)
+            if anomaly_start >= 0 and anomaly_end >= 0 and anomaly_start < len(timestamps) and anomaly_end < len(timestamps):
+                ax2.axvspan(anomaly_start, anomaly_end, alpha=0.2, color='red', label='Vùng bất thường')
+            
+            ax2.set_xlabel('Thời gian')
+            ax2.set_ylabel('Số lượng gói tin')
+            ax2.set_title('Phân tích lưu lượng DHCP theo thời gian')
+            ax2.set_xticks(x)
+            ax2.set_xticklabels(timestamps)
+            ax2.legend()
+            ax2.grid(axis='y', linestyle='--', alpha=0.7)
+        else:
+            ax2.text(0.5, 0.5, "Không có dữ liệu lưu lượng DHCP", ha='center', va='center', fontsize=14)
+            ax2.set_title('Phân tích lưu lượng DHCP theo thời gian')
+            ax2.axis('off')
         
         plt.tight_layout()
         return fig
@@ -970,127 +1509,72 @@ class ChartCreator:
             results: Kết quả phân tích gói tin
 
         Returns:
-            Biểu đồ phát hiện tấn công DNS
+            Biểu đồ cảnh báo DNS
         """
         if not results or "dns_analysis" not in results or not results.get("dns_analysis"):
-            # Tạo biểu đồ phát hiện tấn công DNS mẫu khi không có dữ liệu thực
+            # Tạo biểu đồ cảnh báo DNS mẫu khi không có dữ liệu thực
             return self._create_sample_dns_attack_chart()
         
-        # Tạo biểu đồ với dữ liệu thực tế khi có
-        return self._create_sample_dns_attack_chart()
+        # Sử dụng dữ liệu thực về DNS
+        dns_analysis = results.get("dns_analysis")
+        
+        # Kiểm tra cấu trúc dữ liệu
+        if isinstance(dns_analysis, dict) and "alerts" in dns_analysis and "traffic" in dns_analysis:
+            # Tạo biểu đồ từ dữ liệu thực
+            return self._create_dns_attack_chart_from_data(dns_analysis)
+        else:
+            # Sử dụng biểu đồ mẫu nếu cấu trúc dữ liệu không phù hợp
+            return self._create_sample_dns_attack_chart()
     
     def _create_sample_dns_attack_chart(self) -> plt.Figure:
-        """Tạo biểu đồ phát hiện tấn công DNS mẫu."""
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(14, 10))
+        """
+        Tạo biểu đồ mẫu phát hiện tấn công DNS khi không có dữ liệu thực.
         
-        # Dữ liệu mẫu cho biểu đồ số lượng truy vấn DNS theo thời gian
-        timestamps = ["10:05", "10:10", "10:15", "10:20", "10:25", "10:30", "10:35", "10:40"]
-        dns_queries = [120, 150, 480, 560, 420, 280, 180, 140]
-        dns_responses = [110, 140, 420, 490, 350, 250, 170, 130]
-        dns_nxdomain = [10, 15, 150, 180, 120, 60, 20, 15]
+        Returns:
+            Biểu đồ cảnh báo DNS mẫu
+        """
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [1, 2]})
         
-        # Vẽ biểu đồ số lượng truy vấn DNS theo thời gian
-        ax1.plot(timestamps, dns_queries, 'o-', label='DNS Queries', color='#3498db')
-        ax1.plot(timestamps, dns_responses, 'o-', label='DNS Responses', color='#2ecc71')
-        ax1.plot(timestamps, dns_nxdomain, 'o-', label='NXDOMAIN Responses', color='#e74c3c')
-        
-        # Đánh dấu vùng bất thường
-        ax1.axvspan(2, 5, alpha=0.2, color='red', label='Vùng bất thường')
-        
-        # Thêm chú thích cho điểm bất thường
-        ax1.annotate('DNS Flood Attack', xy=(3, 560), xytext=(4, 600),
-                    arrowprops=dict(facecolor='black', shrink=0.05, width=1.5))
-        
-        # Cấu hình biểu đồ
-        ax1.set_xlabel('Thời gian')
-        ax1.set_ylabel('Số lượng')
-        ax1.set_title('Lưu lượng DNS theo thời gian')
-        ax1.legend(loc='upper right')
-        ax1.grid(True, linestyle='--', alpha=0.7)
-        
-        # Dữ liệu mẫu cho biểu đồ kích thước gói DNS
-        dns_sizes = [
-            20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 120, 150, 
-            200, 250, 300, 400, 500, 800, 1200, 2000, 3000, 4000
-        ]
-        dns_size_counts = [
-            50, 80, 120, 180, 220, 200, 180, 150, 120, 90, 60, 40, 30, 25,
-            20, 15, 10, 8, 5, 3, 10, 15, 8, 3
+        # Tạo dữ liệu mẫu cho cảnh báo
+        alerts = [
+            {
+                "time": "15:25:30",
+                "src_ip": "10.0.0.25",
+                "domain": "d7xve2kjdl20s.cloudfront.net",
+                "alert_type": "DNS Tunneling Suspected",
+                "severity": 8,
+                "details": "Kích thước gói lớn, lên đến 800 bytes"
+            },
+            {
+                "time": "15:35:15",
+                "src_ip": "10.0.0.15",
+                "domain": "ksdjfskjfksjdf98s7df8sd7f8.malicious.com",
+                "alert_type": "Suspicious DNS Queries",
+                "severity": 6,
+                "details": "Tên miền bất thường, có thể là C&C hoặc tunneling"
+            }
         ]
         
-        # Vẽ biểu đồ histogram kích thước gói DNS
-        ax2.bar(dns_sizes, dns_size_counts, width=20, color='#3498db', alpha=0.7)
+        # Tạo dữ liệu mẫu cho lưu lượng
+        timestamps = ['15:20', '15:22', '15:24', '15:26', '15:28', '15:30', '15:32', '15:34', '15:36', '15:38']
+        dns_queries = [15, 18, 25, 65, 85, 45, 25, 35, 15, 10]
+        dns_responses = [12, 16, 22, 55, 80, 40, 22, 30, 12, 8]
+        dns_nxdomain = [0, 1, 2, 5, 20, 15, 5, 8, 3, 1]
         
-        # Đánh dấu vùng bất thường
-        ax2.axvspan(1500, 4000, alpha=0.2, color='red', label='Vùng bất thường')
-        
-        # Thêm chú thích cho vùng bất thường
-        ax2.annotate('DNS Tunneling Suspected', xy=(2000, 15), xytext=(1000, 20),
-                    arrowprops=dict(facecolor='black', shrink=0.05, width=1.5))
-        
-        # Cấu hình biểu đồ
-        ax2.set_xlabel('Kích thước gói tin (bytes)')
-        ax2.set_ylabel('Số lượng')
-        ax2.set_title('Phân bố kích thước gói DNS')
-        ax2.set_xscale('log')
-        ax2.grid(True, linestyle='--', alpha=0.7)
-        
-        # Dữ liệu mẫu cho biểu đồ miền đích phổ biến
-        top_domains = [
-            "example.com", "google.com", "office365.com", 
-            "microsoft.com", "amazon.com", "akamai.net",
-            "abcdefg123.xyz", "qq41uasdk3.cn", "z7x9vb2n5m.info"
-        ]
-        
-        domain_counts = [120, 80, 60, 55, 50, 45, 200, 180, 150]
-        domain_colors = ['#3498db', '#3498db', '#3498db', '#3498db', '#3498db', '#3498db', 
-                         '#e74c3c', '#e74c3c', '#e74c3c']
-        
-        # Vẽ biểu đồ miền đích phổ biến
-        y_pos = range(len(top_domains))
-        ax3.barh(y_pos, domain_counts, color=domain_colors)
-        ax3.set_yticks(y_pos)
-        ax3.set_yticklabels(top_domains)
-        ax3.invert_yaxis()  # Sắp xếp từ trên xuống
-        
-        # Đánh dấu miền đáng ngờ
-        for i, color in enumerate(domain_colors):
-            if color == '#e74c3c':
-                ax3.get_yticklabels()[i].set_color('#e74c3c')
-        
-        # Thêm chú thích
-        ax3.annotate('Miền đáng ngờ', xy=(190, 6.5), xytext=(100, 4),
-                    arrowprops=dict(facecolor='black', shrink=0.05, width=1.5))
-        
-        # Cấu hình biểu đồ
-        ax3.set_xlabel('Số lượng truy vấn')
-        ax3.set_title('Top DNS Domains')
-        ax3.grid(True, linestyle='--', alpha=0.7)
-        
-        # Dữ liệu mẫu cho bảng cảnh báo DNS
-        dns_alerts = [
-            {"time": "10:15:23", "src_ip": "192.168.1.5", "domain": "example.com", 
-             "alert_type": "DNS Query Flood", "severity": 7, "details": "300+ truy vấn/phút"},
-            
-            {"time": "10:18:45", "src_ip": "192.168.1.10", "domain": "abcdefg123.xyz", 
-             "alert_type": "DNS Tunneling Suspected", "severity": 8, "details": "Kích thước gói lớn, nhiều subdomain"},
-            
-            {"time": "10:22:18", "src_ip": "192.168.1.15", "domain": "google.com", 
-             "alert_type": "DNS Cache Poisoning", "severity": 9, "details": "IP phản hồi thay đổi"}
-        ]
-        
-        # Vẽ bảng cảnh báo DNS
-        ax4.axis('tight')
-        ax4.axis('off')
+        # Vẽ bảng cảnh báo
+        ax1.axis('tight')
+        ax1.axis('off')
         
         # Chuẩn bị dữ liệu cho bảng
         headers = ["Thời gian", "IP nguồn", "Tên miền", "Loại cảnh báo", "Mức độ", "Chi tiết"]
         data = []
         colors = []
         
-        for alert in dns_alerts:
-            # Mức độ nghiêm trọng
+        for alert in alerts:
+            # Định dạng dữ liệu
             severity = alert.get("severity", 0)
+            
+            # Chuyển mức độ thành biểu tượng
             if severity >= 8:
                 severity_icon = "🔴 " + str(severity)
             elif severity >= 5:
@@ -1116,7 +1600,7 @@ class ChartCreator:
                 colors.append("#ffffcc")  # Vàng nhạt
         
         # Tạo bảng
-        table = ax4.table(
+        table = ax1.table(
             cellText=data,
             colLabels=headers,
             loc='center',
@@ -1140,164 +1624,365 @@ class ChartCreator:
             cell.set_facecolor('#4b6584')  # Màu xanh đậm
             cell.set_text_props(color='white')
         
-        ax4.set_title("Cảnh báo tấn công DNS", fontsize=14, pad=20)
+        ax1.set_title("Cảnh báo tấn công DNS", fontsize=14, pad=20)
+        
+        # Vẽ biểu đồ số lượng gói DNS theo thời gian
+        x = range(len(timestamps))
+        
+        ax2.plot(x, dns_queries, marker='o', linewidth=2, label='DNS Queries', color='#3498db')
+        ax2.plot(x, dns_responses, marker='s', linewidth=2, label='DNS Responses', color='#2ecc71')
+        ax2.plot(x, dns_nxdomain, marker='^', linewidth=2, label='NXDOMAIN', color='#e74c3c')
+        
+        # Tạo đồ thị phụ để hiển thị tỷ lệ NXDOMAIN
+        ax3 = ax2.twinx()
+        nxdomain_ratio = []
+        for q, nx in zip(dns_queries, dns_nxdomain):
+            ratio = (nx / q * 100) if q > 0 else 0
+            nxdomain_ratio.append(ratio)
+        
+        ax3.plot(x, nxdomain_ratio, marker='d', linestyle='--', linewidth=1.5, label='NXDOMAIN Ratio (%)', color='#9b59b6')
+        ax3.set_ylabel('NXDOMAIN Ratio (%)')
+        ax3.set_ylim(0, 100)
+        
+        # Đánh dấu vùng bất thường
+        ax2.axvspan(3, 5, alpha=0.2, color='red', label='Vùng bất thường')
+        
+        ax2.set_xlabel('Thời gian')
+        ax2.set_ylabel('Số lượng gói tin')
+        ax2.set_title('Phân tích lưu lượng DNS theo thời gian')
+        ax2.set_xticks(x)
+        ax2.set_xticklabels(timestamps)
+        
+        # Thêm legend tổng hợp
+        lines1, labels1 = ax2.get_legend_handles_labels()
+        lines2, labels2 = ax3.get_legend_handles_labels()
+        ax2.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
+        
+        ax2.grid(True, linestyle='--', alpha=0.7)
         
         plt.tight_layout()
         return fig
     
-    def create_top_talkers_chart(self, results: Dict, n: int = 10) -> plt.Figure:
+    def _create_dns_attack_chart_from_data(self, dns_analysis: Dict) -> plt.Figure:
         """
-        Tạo biểu đồ Top N IP nguồn/đích gửi nhiều dữ liệu nhất.
+        Tạo biểu đồ phát hiện tấn công DNS từ dữ liệu thực.
+        
+        Args:
+            dns_analysis: Dict chứa dữ liệu phân tích DNS
+
+        Returns:
+            Biểu đồ cảnh báo DNS
+        """
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [1, 2]})
+        
+        # Trích xuất dữ liệu cảnh báo
+        dns_alerts = dns_analysis.get("alerts", [])
+        
+        # Trích xuất dữ liệu lưu lượng
+        traffic_data = dns_analysis.get("traffic", {})
+        timestamps = traffic_data.get("timestamps", [])
+        dns_queries = traffic_data.get("queries", [])
+        dns_responses = traffic_data.get("responses", [])
+        dns_nxdomain = traffic_data.get("nxdomain", [])
+        top_domains = traffic_data.get("top_domains", [])
+        
+        # Vẽ bảng cảnh báo DNS
+        ax1.axis('tight')
+        ax1.axis('off')
+        
+        # Chuẩn bị dữ liệu cho bảng
+        headers = ["Thời gian", "IP nguồn", "Tên miền", "Loại cảnh báo", "Mức độ", "Chi tiết"]
+        data = []
+        colors = []
+        
+        for alert in dns_alerts:
+            # Định dạng dữ liệu
+            severity = alert.get("severity", 0)
+            
+            # Chuyển mức độ thành biểu tượng
+            if severity >= 8:
+                severity_icon = "🔴 " + str(severity)
+            elif severity >= 5:
+                severity_icon = "🟠 " + str(severity)
+            else:
+                severity_icon = "🟡 " + str(severity)
+            
+            data.append([
+                alert.get("time", ""),
+                alert.get("src_ip", ""),
+                alert.get("domain", ""),
+                alert.get("alert_type", ""),
+                severity_icon,
+                alert.get("details", "")
+            ])
+            
+            # Màu nền dựa trên mức độ nghiêm trọng
+            if severity >= 8:
+                colors.append("#ffcccc")  # Đỏ nhạt
+            elif severity >= 5:
+                colors.append("#ffe0cc")  # Cam nhạt
+            else:
+                colors.append("#ffffcc")  # Vàng nhạt
+        
+        # Tạo bảng nếu có dữ liệu
+        if data:
+            table = ax1.table(
+                cellText=data,
+                colLabels=headers,
+                loc='center',
+                cellLoc='center'
+            )
+            
+            # Định dạng bảng
+            table.auto_set_font_size(False)
+            table.set_fontsize(9)
+            table.scale(1, 1.5)
+            
+            # Đặt màu nền cho các hàng dữ liệu
+            for i in range(len(data)):
+                for j in range(len(headers)):
+                    cell = table[(i+1, j)]  # +1 vì hàng 0 là header
+                    cell.set_facecolor(colors[i])
+            
+            # Định dạng header
+            for j, header in enumerate(headers):
+                cell = table[(0, j)]
+                cell.set_facecolor('#4b6584')  # Màu xanh đậm
+                cell.set_text_props(color='white')
+        else:
+            ax1.text(0.5, 0.5, "Không có cảnh báo DNS", ha='center', va='center', fontsize=14)
+        
+        ax1.set_title("Cảnh báo tấn công DNS", fontsize=14, pad=20)
+        
+        # Vẽ biểu đồ số lượng gói DNS theo thời gian
+        if timestamps and any([dns_queries, dns_responses, dns_nxdomain]):
+            x = range(len(timestamps))
+            
+            if dns_queries:
+                ax2.plot(x, dns_queries, marker='o', linewidth=2, label='DNS Queries', color='#3498db')
+            if dns_responses:
+                ax2.plot(x, dns_responses, marker='s', linewidth=2, label='DNS Responses', color='#2ecc71')
+            if dns_nxdomain:
+                ax2.plot(x, dns_nxdomain, marker='^', linewidth=2, label='NXDOMAIN', color='#e74c3c')
+            
+            # Tạo đồ thị phụ để hiển thị tỷ lệ NXDOMAIN
+            if dns_queries and dns_nxdomain:
+                ax3 = ax2.twinx()
+                nxdomain_ratio = []
+                for q, nx in zip(dns_queries, dns_nxdomain):
+                    ratio = (nx / q * 100) if q > 0 else 0
+                    nxdomain_ratio.append(ratio)
+                
+                ax3.plot(x, nxdomain_ratio, marker='d', linestyle='--', linewidth=1.5, label='NXDOMAIN Ratio (%)', color='#9b59b6')
+                ax3.set_ylabel('NXDOMAIN Ratio (%)')
+                ax3.set_ylim(0, 100)
+                
+                # Thêm legend tổng hợp
+                lines1, labels1 = ax2.get_legend_handles_labels()
+                lines2, labels2 = ax3.get_legend_handles_labels()
+                ax2.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
+            else:
+                ax2.legend(loc='upper right')
+            
+            # Đánh dấu vùng bất thường nếu có
+            anomaly_start = traffic_data.get("anomaly_start", -1)
+            anomaly_end = traffic_data.get("anomaly_end", -1)
+            if anomaly_start >= 0 and anomaly_end >= 0 and anomaly_start < len(timestamps) and anomaly_end < len(timestamps):
+                ax2.axvspan(anomaly_start, anomaly_end, alpha=0.2, color='red', label='Vùng bất thường')
+            
+            ax2.set_xlabel('Thời gian')
+            ax2.set_ylabel('Số lượng gói tin')
+            ax2.set_title('Phân tích lưu lượng DNS theo thời gian')
+            ax2.set_xticks(x)
+            ax2.set_xticklabels(timestamps)
+            ax2.grid(True, linestyle='--', alpha=0.7)
+        else:
+            ax2.text(0.5, 0.5, "Không có dữ liệu lưu lượng DNS", ha='center', va='center', fontsize=14)
+            ax2.set_title('Phân tích lưu lượng DNS theo thời gian')
+            ax2.axis('off')
+        
+        plt.tight_layout()
+        return fig
+    
+    def create_top_talkers_chart(self, results: Dict, top_n: int = 10) -> plt.Figure:
+        """
+        Tạo biểu đồ Top Talkers/Chatters.
         
         Args:
             results: Kết quả phân tích gói tin
-            n: Số lượng top hosts cần hiển thị
-
+            top_n: Số lượng top hosts muốn hiển thị
+            
         Returns:
-            Biểu đồ Top N Talkers/Chatters
+            Biểu đồ Top Talkers/Chatters
         """
-        if not results or "ip_stats" not in results or not results.get("ip_stats"):
-            # Tạo biểu đồ top talkers mẫu khi không có dữ liệu thực
-            return self._create_sample_top_talkers_chart(n)
+        if not results:
+            return self._create_empty_chart("Không có dữ liệu để phân tích Top Talkers")
         
-        # Tạo biểu đồ với dữ liệu thực tế khi có
-        return self._create_sample_top_talkers_chart(n)
+        # Sử dụng dữ liệu top talkers nếu có trong kết quả
+        if "top_talkers" in results and results["top_talkers"]:
+            top_talkers_data = results["top_talkers"]
+            return self._create_top_talkers_chart_from_data(top_talkers_data, top_n)
+        elif "ip_stats" in results and results["ip_stats"]:
+            # Thử sử dụng ip_stats để tạo dữ liệu top talkers
+            ip_stats = results["ip_stats"]
+            return self._create_top_talkers_chart_from_ip_stats(ip_stats, top_n)
+        else:
+            # Nếu không có dữ liệu thực, tạo mẫu
+            return self._create_sample_top_talkers_chart(top_n)
     
-    def _create_sample_top_talkers_chart(self, n: int = 10) -> plt.Figure:
-        """Tạo biểu đồ Top N Talkers mẫu."""
-        # Giảm n nếu quá lớn
-        n = min(n, 10)
-        
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(14, 10))
-        
-        # Dữ liệu mẫu cho Top N IP nguồn (theo bytes)
-        source_ips = [
-            "192.168.1.5", "192.168.1.10", "192.168.1.15", "10.0.0.1", "10.0.0.2",
-            "192.168.1.20", "172.16.1.1", "192.168.1.25", "172.16.1.2", "10.0.0.3"
-        ][:n]
-        
-        source_bytes = [
-            1500000, 800000, 500000, 350000, 250000, 
-            180000, 150000, 120000, 100000, 80000
-        ][:n]
-        
-        # Vẽ biểu đồ Top N IP nguồn (theo bytes)
-        bars1 = ax1.barh(range(len(source_ips)), source_bytes, color='#3498db')
-        ax1.set_yticks(range(len(source_ips)))
-        ax1.set_yticklabels(source_ips)
-        ax1.invert_yaxis()  # Sắp xếp từ trên xuống
-        
-        # Thêm giá trị lên các cột
-        for i, bar in enumerate(bars1):
-            width = bar.get_width()
-            formatted_width = self._format_bytes(width)
-            ax1.text(width + (width * 0.02), bar.get_y() + bar.get_height()/2, 
-                    formatted_width, va='center')
-        
-        ax1.set_xlabel('Bytes')
-        ax1.set_title(f'Top {n} IP nguồn (theo bytes)')
-        ax1.grid(True, linestyle='--', alpha=0.7, axis='x')
-        
-        # Dữ liệu mẫu cho Top N IP đích (theo bytes)
-        dest_ips = [
-            "8.8.8.8", "192.168.1.1", "216.58.200.174", "52.22.118.80", "13.32.98.150",
-            "192.168.1.100", "172.217.167.78", "23.62.236.40", "192.168.1.2", "34.102.136.180"
-        ][:n]
-        
-        dest_bytes = [
-            2000000, 900000, 650000, 400000, 300000,
-            250000, 200000, 180000, 150000, 120000
-        ][:n]
-        
-        # Vẽ biểu đồ Top N IP đích (theo bytes)
-        bars2 = ax2.barh(range(len(dest_ips)), dest_bytes, color='#2ecc71')
-        ax2.set_yticks(range(len(dest_ips)))
-        ax2.set_yticklabels(dest_ips)
-        ax2.invert_yaxis()  # Sắp xếp từ trên xuống
-        
-        # Thêm giá trị lên các cột
-        for i, bar in enumerate(bars2):
-            width = bar.get_width()
-            formatted_width = self._format_bytes(width)
-            ax2.text(width + (width * 0.02), bar.get_y() + bar.get_height()/2, 
-                    formatted_width, va='center')
-        
-        ax2.set_xlabel('Bytes')
-        ax2.set_title(f'Top {n} IP đích (theo bytes)')
-        ax2.grid(True, linestyle='--', alpha=0.7, axis='x')
-        
-        # Dữ liệu mẫu cho Top N cặp IP Source-Destination
-        ip_pairs = [
-            "192.168.1.5 → 8.8.8.8",
-            "192.168.1.10 → 216.58.200.174",
-            "192.168.1.15 → 52.22.118.80",
-            "10.0.0.1 → 192.168.1.1",
-            "192.168.1.5 → 13.32.98.150",
-            "192.168.1.10 → 23.62.236.40",
-            "172.16.1.1 → 34.102.136.180",
-            "192.168.1.20 → 192.168.1.100",
-            "10.0.0.2 → 172.217.167.78",
-            "192.168.1.15 → 192.168.1.2"
-        ][:n]
-        
-        pair_bytes = [
-            1200000, 750000, 580000, 400000, 350000,
-            280000, 220000, 180000, 150000, 120000
-        ][:n]
-        
-        # Vẽ biểu đồ Top N cặp IP Source-Destination (theo bytes)
-        bars3 = ax3.barh(range(len(ip_pairs)), pair_bytes, color='#9b59b6')
-        ax3.set_yticks(range(len(ip_pairs)))
-        ax3.set_yticklabels(ip_pairs)
-        ax3.invert_yaxis()  # Sắp xếp từ trên xuống
-        
-        # Thêm giá trị lên các cột
-        for i, bar in enumerate(bars3):
-            width = bar.get_width()
-            formatted_width = self._format_bytes(width)
-            ax3.text(width + (width * 0.02), bar.get_y() + bar.get_height()/2, 
-                    formatted_width, va='center')
-        
-        ax3.set_xlabel('Bytes')
-        ax3.set_title(f'Top {n} cặp IP Source-Destination (theo bytes)')
-        ax3.grid(True, linestyle='--', alpha=0.7, axis='x')
-        
-        # Dữ liệu mẫu cho Top N giao thức
-        protocols = [
-            "HTTP/HTTPS", "DNS", "ICMP", "DHCP", "NTP", 
-            "SSH", "FTP", "SMTP", "SNMP", "RDP"
-        ][:n]
-        
-        protocol_bytes = [
-            2500000, 1200000, 800000, 400000, 350000,
-            250000, 200000, 150000, 100000, 80000
-        ][:n]
-        
-        # Vẽ biểu đồ Top N Protocols (theo bytes)
-        cmap = plt.cm.get_cmap('tab10')
-        colors = [cmap(i) for i in range(len(protocols))]
-        
-        ax4.pie(protocol_bytes, labels=protocols, colors=colors, autopct='%1.1f%%', 
-              startangle=90, shadow=False)
-        ax4.axis('equal')  # Để hình tròn đều
-        
-        ax4.set_title(f'Top {n} giao thức (theo bytes)')
-        
-        plt.tight_layout()
-        return fig
-    
-    def _format_bytes(self, bytes_value: int) -> str:
+    def _create_sample_top_talkers_chart(self, top_n: int = 10) -> plt.Figure:
         """
-        Định dạng giá trị bytes thành đơn vị đọc được (KB, MB, GB).
+        Tạo biểu đồ mẫu Top Talkers khi không có dữ liệu thực.
         
         Args:
-            bytes_value: Giá trị bytes cần định dạng
-
+            top_n: Số lượng top hosts muốn hiển thị
+            
         Returns:
-            Chuỗi đã định dạng
+            Biểu đồ mẫu Top Talkers
         """
-        for unit in ['', 'KB', 'MB', 'GB', 'TB']:
-            if bytes_value < 1024.0:
-                return f"{bytes_value:.1f} {unit}"
-            bytes_value /= 1024.0
-        return f"{bytes_value:.1f} PB"
+        # Giới hạn top_n
+        top_n = min(top_n, 20)
+        
+        # Tạo dữ liệu mẫu
+        source_ips = [f"192.168.1.{i}" for i in range(1, top_n + 1)]
+        sent_packets = [random.randint(100, 1000) for _ in range(top_n)]
+        
+        destination_ips = [f"10.0.0.{i}" for i in range(1, top_n + 1)]
+        received_packets = [random.randint(100, 1000) for _ in range(top_n)]
+        
+        # Sắp xếp giảm dần theo số lượng gói tin
+        source_data = sorted(zip(source_ips, sent_packets), key=lambda x: x[1], reverse=True)
+        dest_data = sorted(zip(destination_ips, received_packets), key=lambda x: x[1], reverse=True)
+        
+        source_ips, sent_packets = zip(*source_data)
+        destination_ips, received_packets = zip(*dest_data)
+        
+        # Tạo figure với 2 subplots
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 8))
+        
+        # Vẽ Top Source IPs
+        bars1 = ax1.barh(source_ips, sent_packets, color=plt.cm.Blues(0.6))
+        ax1.set_title(f"Top {top_n} Source IPs (Talkers)")
+        ax1.set_xlabel("Số lượng gói tin gửi")
+        ax1.set_ylabel("Địa chỉ IP nguồn")
+        
+        # Thêm giá trị trên mỗi thanh
+        for bar in bars1:
+            width = bar.get_width()
+            ax1.text(width + 10, bar.get_y() + bar.get_height()/2, f"{width:,}",
+                     ha='left', va='center', fontsize=9)
+        
+        # Vẽ Top Destination IPs
+        bars2 = ax2.barh(destination_ips, received_packets, color=plt.cm.Reds(0.6))
+        ax2.set_title(f"Top {top_n} Destination IPs (Listeners)")
+        ax2.set_xlabel("Số lượng gói tin nhận")
+        ax2.set_ylabel("Địa chỉ IP đích")
+        
+        # Thêm giá trị trên mỗi thanh
+        for bar in bars2:
+            width = bar.get_width()
+            ax2.text(width + 10, bar.get_y() + bar.get_height()/2, f"{width:,}",
+                     ha='left', va='center', fontsize=9)
+        
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.9)
+        fig.suptitle(f"Top {top_n} Talkers & Listeners (Dữ liệu mẫu)", fontsize=16)
+        
+        return fig
+    
+    def _create_top_talkers_chart_from_data(self, top_talkers_data: Dict, top_n: int = 10) -> plt.Figure:
+        """
+        Tạo biểu đồ Top Talkers từ dữ liệu thực.
+        
+        Args:
+            top_talkers_data: Dict chứa dữ liệu top talkers
+            top_n: Số lượng top hosts muốn hiển thị
+            
+        Returns:
+            Biểu đồ Top Talkers
+        """
+        # Giới hạn top_n
+        top_n = min(top_n, 20)
+        
+        # Trích xuất dữ liệu
+        source_data = top_talkers_data.get("sources", {})
+        dest_data = top_talkers_data.get("destinations", {})
+        
+        # Chuyển dict thành danh sách và sắp xếp
+        source_items = sorted(source_data.items(), key=lambda x: x[1], reverse=True)[:top_n]
+        dest_items = sorted(dest_data.items(), key=lambda x: x[1], reverse=True)[:top_n]
+        
+        # Tách thành hai danh sách riêng biệt
+        source_ips, sent_packets = [], []
+        if source_items:
+            source_ips, sent_packets = zip(*source_items)
+        
+        destination_ips, received_packets = [], []
+        if dest_items:
+            destination_ips, received_packets = zip(*dest_items)
+        
+        # Tạo figure với 2 subplots
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 8))
+        
+        # Vẽ Top Source IPs nếu có dữ liệu
+        if source_ips:
+            bars1 = ax1.barh(source_ips, sent_packets, color=plt.cm.Blues(0.6))
+            ax1.set_title(f"Top {len(source_ips)} Source IPs (Talkers)")
+            ax1.set_xlabel("Số lượng gói tin gửi")
+            ax1.set_ylabel("Địa chỉ IP nguồn")
+            
+            # Thêm giá trị trên mỗi thanh
+            for bar in bars1:
+                width = bar.get_width()
+                ax1.text(width + 10, bar.get_y() + bar.get_height()/2, f"{width:,}",
+                         ha='left', va='center', fontsize=9)
+        else:
+            ax1.text(0.5, 0.5, "Không có dữ liệu Source IPs", ha='center', va='center', fontsize=14)
+            ax1.set_title("Top Source IPs (Talkers)")
+            ax1.axis('off')
+        
+        # Vẽ Top Destination IPs nếu có dữ liệu
+        if destination_ips:
+            bars2 = ax2.barh(destination_ips, received_packets, color=plt.cm.Reds(0.6))
+            ax2.set_title(f"Top {len(destination_ips)} Destination IPs (Listeners)")
+            ax2.set_xlabel("Số lượng gói tin nhận")
+            ax2.set_ylabel("Địa chỉ IP đích")
+            
+            # Thêm giá trị trên mỗi thanh
+            for bar in bars2:
+                width = bar.get_width()
+                ax2.text(width + 10, bar.get_y() + bar.get_height()/2, f"{width:,}",
+                         ha='left', va='center', fontsize=9)
+        else:
+            ax2.text(0.5, 0.5, "Không có dữ liệu Destination IPs", ha='center', va='center', fontsize=14)
+            ax2.set_title("Top Destination IPs (Listeners)")
+            ax2.axis('off')
+        
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.9)
+        fig.suptitle(f"Top Talkers & Listeners", fontsize=16)
+        
+        return fig
+    
+    def _create_top_talkers_chart_from_ip_stats(self, ip_stats: Dict, top_n: int = 10) -> plt.Figure:
+        """
+        Tạo biểu đồ Top Talkers từ dữ liệu ip_stats.
+        
+        Args:
+            ip_stats: Dict chứa thống kê IP
+            top_n: Số lượng top hosts muốn hiển thị
+            
+        Returns:
+            Biểu đồ Top Talkers
+        """
+        # Tạo dữ liệu top talkers từ ip_stats
+        source_counts = ip_stats.get("source_counts", {})
+        dest_counts = ip_stats.get("destination_counts", {})
+        
+        # Tạo figure và biểu đồ bằng cách sử dụng phương thức tạo từ dữ liệu
+        top_talkers_data = {
+            "sources": source_counts,
+            "destinations": dest_counts
+        }
+        
+        return self._create_top_talkers_chart_from_data(top_talkers_data, top_n)
