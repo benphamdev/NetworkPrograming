@@ -1,5 +1,5 @@
 """
-Report Manager - Xử lý tạo và tải xuống báo cáo.
+Report Manager - Handle Creation, Display, and Download of Analysis Reports
 """
 import os
 
@@ -36,11 +36,11 @@ class ReportManager:
             # Import biến toàn cục
             from src.interfaces.gateways.smolagent_gateway import LATEST_ANALYSIS_MARKDOWN
             report_writer = ReportWriterAgent(output_dir=self.output_dir)
-            
+
             # Sử dụng template cho báo cáo
             from datetime import datetime
             import re
-            
+
             if LATEST_ANALYSIS_MARKDOWN:
                 # Đọc template
                 template_path = "templates/network_analysis_template.md"
@@ -50,25 +50,26 @@ class ReportManager:
                 except Exception as e:
                     print(f"Không thể đọc template: {str(e)}")
                     template = "# {title}\n\n{osi_analysis}"
-                
+
                 # Chuẩn bị dữ liệu để điền vào template
                 now = datetime.now()
                 date_str = now.strftime("%d/%m/%Y")
                 time_str = now.strftime("%H:%M:%S")
-                
+
                 # Trích xuất phần tóm tắt và các phần khác từ markdown phân tích
                 summary = "Phân tích lưu lượng mạng và xác định các vấn đề tiềm ẩn"
                 conclusion = "Xem chi tiết trong phân tích đầy đủ"
-                
+
                 # Cố gắng trích xuất các phần từ LATEST_ANALYSIS_MARKDOWN
                 summary_match = re.search(r'## Tóm tắt\s*\n\n(.*?)(?=\n\n##|\Z)', LATEST_ANALYSIS_MARKDOWN, re.DOTALL)
                 if summary_match:
                     summary = summary_match.group(1).strip()
-                    
-                conclusion_match = re.search(r'## Kết luận\s*\n\n(.*?)(?=\n\n##|\Z)', LATEST_ANALYSIS_MARKDOWN, re.DOTALL)
+
+                conclusion_match = re.search(r'## Kết luận\s*\n\n(.*?)(?=\n\n##|\Z)', LATEST_ANALYSIS_MARKDOWN,
+                                             re.DOTALL)
                 if conclusion_match:
                     conclusion = conclusion_match.group(1).strip()
-                    
+
                 # Tìm tất cả các vấn đề bảo mật
                 security_issues_rows = ""
                 security_issues_pattern = r'\*\*Vấn đề bảo mật:\*\*\s*\n\n(.*?)(?=\n\n\*\*|\n\n##|\Z)'
@@ -79,7 +80,7 @@ class ReportManager:
                         if issue.startswith('- '):
                             issue = issue[2:]  # Bỏ dấu gạch đầu dòng
                             security_issues_rows += f"| {issue} | Cao | Tiềm ẩn rủi ro bảo mật |\n"
-                
+
                 # Tìm tất cả khuyến nghị
                 recommendations = ""
                 recommendations_pattern = r'\*\*Khuyến nghị:\*\*\s*\n\n(.*?)(?=\n\n\*\*|\n\n##|\Z)'
@@ -87,7 +88,7 @@ class ReportManager:
                 for match in recommendations_matches:
                     recs = match.group(1).strip()
                     recommendations += recs + "\n\n"
-                
+
                 # Điền template
                 filled_template = template.format(
                     title="Báo Cáo Phân Tích OSI",
@@ -99,14 +100,14 @@ class ReportManager:
                     recommendations=recommendations if recommendations else "Không có khuyến nghị cụ thể.",
                     conclusion=conclusion
                 )
-                
+
                 # Tạo báo cáo với phân tích đơn giản
                 report_info = report_writer.generate_report(
                     {"analysis": "Phân tích chi tiết lưu lượng mạng theo mô hình OSI"},
                     report_title="Báo Cáo Phân Tích OSI",
                     include_recommendations=True
                 )
-                
+
                 # Ghi đè file markdown bằng template đã điền
                 if 'filename' in report_info:
                     md_path = os.path.join(self.output_dir, report_info['filename'])
@@ -117,9 +118,9 @@ class ReportManager:
                         return f"✅ Đã tạo báo cáo thành công với nội dung đầy đủ: {report_info['readable_time']}", self.get_reports_dataframe()
                     except Exception as write_error:
                         print(f"Lỗi khi ghi file: {str(write_error)}")
-                
+
                 return f"✅ Đã tạo báo cáo: {report_info['readable_time']}", self.get_reports_dataframe()
-                
+
             # Phần còn lại giữ nguyên
             if not analysis_results or (isinstance(analysis_results, dict) and len(analysis_results) == 0):
                 if self.base_presenter.latest_results:

@@ -96,15 +96,8 @@ class GradioPresenter:
         try:
             pcap_file = self.base_presenter.latest_pcap_file
 
-            # Tạo prompt tùy chỉnh cho phân tích OSI
-            custom_prompt = """
-            Là một chuyên gia điều tra số trong lĩnh vực mạng (Network Forensics Expert), hãy phân tích chi tiết lưu lượng mạng dưới đây theo mô hình OSI (7 tầng).
-            Tập trung phân tích sâu về các dấu hiệu bất thường và các vấn đề bảo mật tiềm ẩn ở mỗi tầng.
-            Đề xuất các use case phân tích mới để phát hiện tấn công hoặc vấn đề mạng ngoài những gì hệ thống hiện tại đã phát hiện.
-            """
-
             # Sử dụng pcap_analyzer.analyze_pcap_raw_packets trực tiếp với file và prompt tùy chỉnh
-            return self.analyzer.pcap_analyzer.analyze_pcap_raw_packets(pcap_file, custom_prompt)
+            return self.analyzer.pcap_analyzer.analyze_pcap_raw_packets(pcap_file)
         except Exception as e:
             return f"Lỗi khi phân tích gói tin: {str(e)}\n\nVui lòng tải lại file PCAP và thử lại."
 

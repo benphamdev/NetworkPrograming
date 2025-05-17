@@ -7,7 +7,6 @@ from enum import Enum
 from typing import Dict, Any, Optional
 
 
-
 class FlowState(Enum):
     """Enum for different states of network flows."""
     ESTABLISHED = "established"

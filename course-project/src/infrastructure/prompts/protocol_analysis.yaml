@@ -1,70 +1,521 @@
 name: protocol_analysis
-description: "Prompt để phân tích các giao thức mạng cụ thể"
-version: "1.0"
+description: "Prompt chuyên sâu để phân tích các giao thức mạng"
+version: "2.0"
 
 tcp_analysis: |
-  Bạn là một chuyên gia phân tích giao thức TCP. Hãy phân tích các gói tin TCP sau đây và cung cấp:
+  Bạn là chuyên gia phân tích giao thức TCP cấp cao. Hãy phân tích chi tiết các gói tin TCP sau và cung cấp:  
+  # 1. Tổng quan về các kết nối TCP:
+  ## 1.1 Số lượng và trạng thái kết nối
+  ## 1.2 Phân loại kết nối theo cổng phổ biến (HTTP, HTTPS, SSH, v.v.)
+  ## 1.3 Thời gian tồn tại trung bình của kết nối
+  # 2. Phân tích chi tiết các cờ TCP:
+  ## 2.1 Phân bố các cờ (SYN, ACK, FIN, RST, PSH, URG)
+  ## 2.2 Phát hiện các chuỗi cờ bất thường
+  ## 2.3 Xác định các TCP Flow/Stream chính
+  # 3. Phân tích quá trình 3-way handshake:
+  ## 3.1 Xác định các kết nối hoàn thành/không hoàn thành handshake
+  ## 3.2 Thời gian hoàn thành handshake trung bình
+  ## 3.3 Các vấn đề trong quá trình handshake
+  # 4. Đánh giá hiệu suất kết nối:
+  ## 4.1 RTT (Round-Trip Time) trung bình, tối đa, tối thiểu
+  ## 4.2 Window size và điều chỉnh trong quá trình truyền
+  ## 4.3 Phân tích retransmission và duplicate ACKs
+  ## 4.4 Đánh giá tắc nghẽn (congestion) và flow control
+  # 5. Phát hiện các mẫu bất thường:
+  ## 5.1 Quét cổng (port scanning): SYN, FIN, ACK, NULL scans
+  ## 5.2 SYN flood hoặc các dấu hiệu tấn công DoS
+  ## 5.3 Reset flood hoặc connection hijacking
+  ## 5.4 Các dấu hiệu túi TCP covert channels
+  # 6. Phân tích quá trình kết thúc kết nối:
+  ## 6.1 Kết thúc bình thường (FIN/ACK) vs bất thường (RST)
+  ## 6.2 Phát hiện các kết nối zombie
+  # 7. Đề xuất giải pháp cụ thể cho các vấn đề phát hiện được:
+  ## 7.1 Tối ưu hóa cấu hình TCP
+  ## 7.2 Biện pháp phòng chống các cuộc tấn công
+  ## 7.3 Cách khắc phục các vấn đề hiệu suất
   
-  1. Tổng quan về các kết nối TCP (số lượng kết nối, trạng thái)
-  2. Phân tích chi tiết các cờ TCP (SYN, ACK, FIN, RST, PSH, URG)
-  3. Xác định các vấn đề kết nối (kết nối bị từ chối, timeout, v.v.)
-  4. Đánh giá hiệu suất kết nối (RTT, window size, v.v.)
-  5. Phát hiện các mẫu bất thường (quét cổng, SYN flood, v.v.)
-  6. Đề xuất biện pháp khắc phục (nếu có)
-  
-  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  Hãy trả lời bằng tiếng Việt, sắp xếp theo thứ tự ưu tiên và đảm bảo cung cấp số liệu định lượng khi có thể.
   
   {{context}}
 
 udp_analysis: |
-  Bạn là một chuyên gia phân tích giao thức UDP. Hãy phân tích các gói tin UDP sau đây và cung cấp:
-  
-  1. Tổng quan về lưu lượng UDP (số lượng gói tin, kích thước)
-  2. Phân tích các ứng dụng sử dụng UDP (DNS, DHCP, VoIP, v.v.)
-  3. Xác định các mẫu lưu lượng bất thường (UDP flood, amplification)
-  4. Đánh giá các vấn đề bảo mật tiềm ẩn
-  5. Đề xuất biện pháp khắc phục (nếu có)
-  
-  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  Bạn là chuyên gia phân tích giao thức UDP hàng đầu. Hãy phân tích chuyên sâu các gói tin UDP sau và cung cấp:
+  # 1. Tổng quan về lưu lượng UDP:
+  ## 1.1 Phân bố số lượng gói tin theo thời gian
+  ## 1.2 Phân tích kích thước gói tin (nhỏ, trung bình, lớn)
+  ## 1.3 Tỷ lệ UDP trong tổng lưu lượng mạng
+  # 2. Phân tích chi tiết theo ứng dụng:
+  ## 2.1 DNS: phân tích số lượng truy vấn, loại records, thời gian phản hồi
+  ## 2.2 DHCP: phân tích quá trình DORA, thời gian thuê IP
+  ## 2.3 VoIP/RTP: phân tích jitter, packet loss, call quality
+  ## 2.4 NTP: phân tích đồng bộ thời gian
+  ## 2.5 Gaming/Streaming: đặc điểm lưu lượng đặc trưng
+  # 3. Xác định các mẫu lưu lượng bất thường:
+  ## 3.1 UDP flood: phát hiện tỷ lệ gói tin bất thường
+  ## 3.2 DNS/NTP amplification: nhận diện các gói tin khuếch đại
+  ## 3.3 UDP port scanning: phát hiện các nỗ lực quét cổng
+  ## 3.4 UDP tunneling: phát hiện các encapsulated protocol
+  # 4. Đánh giá hiệu suất và tính ổn định:
+  ## 4.1 Tỷ lệ mất gói (inferred packet loss)
+  ## 4.2 Phân tích độ trễ của các ứng dụng UDP
+  ## 4.3 Tác động của UDP đến băng thông mạng
+  # 5. Phân tích bảo mật chi tiết:
+  ## 5.1 Phát hiện UDP reflection attacks
+  ## 5.2 Kiểm tra tính hợp lệ của payload
+  ## 5.3 Phát hiện các UDP services không cần thiết
+  # 6. Đề xuất biện pháp tối ưu:
+  ## 6.1 Cấu hình QoS cho UDP traffic
+  ## 6.2 Giới hạn băng thông cho các ứng dụng UDP
+  ## 6.3 Thiết lập firewall rules phù hợp
+  # 7. Đề xuất giải pháp cụ thể cho các vấn đề phát hiện được:
+  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và cung cấp hình ảnh minh họa (nếu có).
   
   {{context}}
 
 icmp_analysis: |
-  Bạn là một chuyên gia phân tích giao thức ICMP. Hãy phân tích các gói tin ICMP sau đây và cung cấp:
-  
-  1. Tổng quan về các loại gói tin ICMP (echo request/reply, destination unreachable, v.v.)
-  2. Phân tích các mã lỗi ICMP và ý nghĩa của chúng
-  3. Xác định các mẫu bất thường (ICMP flood, ICMP tunneling, v.v.)
-  4. Đánh giá các vấn đề mạng và bảo mật tiềm ẩn
-  5. Đề xuất biện pháp khắc phục (nếu có)
-  
-  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  Bạn là chuyên gia phân tích giao thức ICMP. Hãy tiến hành phân tích chuyên sâu các gói tin ICMP sau và cung cấp:
+  # 1. Tổng quan về các loại gói tin ICMP:  
+  ## 1.1 Phân loại và số lượng theo Type và Code
+  ## 1.2 Tỷ lệ Echo Request/Reply vs Error Messages
+  ## 1.3 Phân bố theo nguồn/đích và thời gian
+  # 2. Phân tích chi tiết từng loại ICMP:
+  ## 2.1 Echo Request/Reply (Type 8/0): đặc điểm ping, round-trip time
+  ## 2.2 Destination Unreachable (Type 3): phân tích từng code và nguyên nhân
+  ## 2.3 Time Exceeded (Type 11): phân tích TTL issues, traceroute patterns
+  ## 2.4 Redirect (Type 5): phân tích các thay đổi định tuyến
+  ## 2.5 Router Advertisement/Solicitation (Type 9/10): phân tích quảng bá router
+  # 3. Phân tích các mã lỗi ICMP và ý nghĩa:
+  ## 3.1 Mối liên hệ giữa các mã lỗi và vấn đề mạng
+  ## 3.2 Tương quan với các giao thức khác (TCP/UDP)
+  ## 3.3 Phát hiện các vấn đề định tuyến, NAT, firewall
+  # 4. Chẩn đoán vấn đề mạng:
+  ## 4.1 Path MTU Discovery và Fragmentation issues
+  ## 4.2 Phát hiện các đoạn mạng bị nghẽn hoặc lỗi
+  ## 4.3 Xác định các chính sách firewall/ACL từ ICMP errors
+  # 5. Phát hiện các mẫu bất thường:
+  ## 5.1 ICMP flood: phát hiện các dấu hiệu DoS
+  ## 5.2 ICMP tunneling: phát hiện các covert channels
+  ## 5.3 ICMP sweeping/scanning: phát hiện hoạt động reconnaissance
+  ## 5.4 ICMP timestamp manipulation
+  # 6. Phân tích ICMP timestamp và timestamp reply:
+  ## 6.1 Kiểm tra sự đồng bộ thời gian
+  ## 6.2 Phát hiện timestamp tampering
+  # 7. Đề xuất biện pháp bảo mật và tối ưu:
+  ## 7.1 Chính sách ICMP filtering phù hợp
+  ## 7.2 Cấu hình rate-limiting cho ICMP
+  ## 7.3 Best practices về quản lý ICMP trong mạng
+  # 8. Đề xuất giải pháp cụ thể cho các vấn đề phát hiện được:
+  Hãy trả lời bằng tiếng Việt, phân tích chi tiết từng phần và đưa ra các khuyến nghị cụ thể.
   
   {{context}}
 
 arp_analysis: |
-  Bạn là một chuyên gia phân tích giao thức ARP. Hãy phân tích các gói tin ARP sau đây và cung cấp:
+  Bạn là chuyên gia phân tích giao thức ARP cấp cao. Hãy tiến hành phân tích chuyên sâu các gói tin ARP sau và cung cấp:
+  # 1. Tổng quan lưu lượng ARP:
+  ## 1.1 Phân loại theo loại gói tin (request, reply, gratuitous, announcement)
+  ## 1.2 Thống kê số lượng và tần suất theo thời gian
+  ## 1.3 Phân bố địa lý (local/non-local) và broadcast domains
+  # 2. Phân tích chi tiết ánh xạ IP-MAC:
+  ## 2.1 Tạo bảng ánh xạ IP-MAC hoàn chỉnh
+  ## 2.2 Xác định các thiết bị chính trong mạng (gateway, servers)
+  ## 2.3 Phát hiện các thiết bị có nhiều địa chỉ IP (multi-homed)
+  ## 2.4 Phân tích giá trị hardware/protocol type và length
+  # 3. Theo dõi cập nhật ARP cache:
+  ## 3.1 Thời gian tồn tại của các mục ARP
+  ## 3.2 Tần suất cập nhật và refresh
+  ## 3.3 Phát hiện các thay đổi đột ngột
+  # 4. Phát hiện các dấu hiệu ARP poisoning/spoofing:
+  ## 4.1 Các địa chỉ MAC thay đổi bất thường cho cùng một IP
+  ## 4.2 Các gratuitous ARP không mong muốn
+  ## 4.3 Phát hiện các yêu cầu ARP bất thường (request storms)
+  ## 4.4 Man-in-the-middle attack patterns
+  # 5. Phân tích Gratuitous ARP:
+  ## 5.1 Xác định mục đích (IP conflict detection, failover, interface changes)
+  ## 5.2 Phát hiện các gratuitous ARP đáng ngờ
+  ## 5.3 Phân tích việc sử dụng trong high-availability systems
+  # 6. Phân tích Proxy ARP:
+  ## 6.1 Xác định các thiết bị thực hiện proxy ARP
+  ## 6.2 Đánh giá tác động đến định tuyến mạng
+  # 7. Đánh giá các vấn đề bảo mật và hiệu suất:
+  ## 7.1 Tác động của ARP traffic đến mạng
+  ## 7.2 Các lỗ hổng bảo mật liên quan đến ARP
+  ## 7.3 Phát hiện ARP cache overflow attacks
+  # 8. Đề xuất biện pháp bảo vệ chi tiết:
+  ## 8.1 Cấu hình static ARP entries cho thiết bị quan trọng
+  ## 8.2 Triển khai ARP inspection và DHCP snooping
+  ## 8.3 Sử dụng VLANs để giới hạn ARP broadcast domain
+  ## 8.4 Các giải pháp phòng chống ARP poisoning
+  Hãy trả lời bằng tiếng Việt, đảm bảo phân tích chi tiết và đưa ra các khuyến nghị cụ thể.
   
-  1. Tổng quan về các loại gói tin ARP (request, reply, gratuitous)
-  2. Phân tích ánh xạ IP-MAC
-  3. Phát hiện các dấu hiệu của ARP spoofing hoặc ARP poisoning
-  4. Đánh giá các vấn đề bảo mật tiềm ẩn
-  5. Đề xuất biện pháp khắc phục (nếu có)
-  
-  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
+  {{context}}
+
+tcp_stream_analysis: |
+  Bạn là chuyên gia phân tích luồng TCP (TCP Stream) cấp cao. Hãy tiến hành phân tích chi tiết các luồng TCP sau và cung cấp:
+  # 1. Tổng quan về luồng TCP:
+  ## 1.1 Số lượng và phân loại các luồng (client-server, peer-to-peer)
+  ## 1.2 Thống kê thời gian tồn tại (ngắn, trung bình, dài)
+  ## 1.3 Phân tích kích thước dữ liệu trao đổi (byte count, packet count)
+  ## 1.4 Phân loại theo ứng dụng (HTTP, HTTPS, FTP, SSH, v.v.)
+  # 2. Phân tích chi tiết quá trình thiết lập kết nối (3-way handshake):
+  ## 2.1 Thời gian hoàn thành handshake
+  ## 2.2 Các tham số đàm phán (MSS, Window Scale, SACK, Timestamps)
+  ## 2.3 Phát hiện các bất thường trong quá trình handshake (retransmissions, delays)
+  ## 2.4 Phân tích TCP options và capabilities
+  # 3. Phân tích trạng thái kết nối qua thời gian:
+  ## 3.1 Xác định các trạng thái (SYN_SENT, ESTABLISHED, FIN_WAIT, etc.)
+  ## 3.2 Thời gian tồn tại trong mỗi trạng thái
+  ## 3.3 Phát hiện các transition không bình thường
+  ## 3.4 Xác định các kết nối "half-open" hoặc "stalled"
+  # 4. Phân tích hiệu suất truyền dữ liệu:
+  ## 4.1 Tốc độ truyền (throughput) theo thời gian
+  ## 4.2 Round-Trip Time (RTT) và biến thiên
+  ## 4.3 Các đợt retransmission và duplicate ACKs
+  ## 4.4 Window size và sự điều chỉnh (dynamic scaling)
+  ## 4.5 Phát hiện các hiện tượng tắc nghẽn (congestion)
+  ## 4.6 TCP Flow Control và Congestion Control behavior
+  # 5. Phân tích sequence/acknowledgment numbers:
+  ## 5.1 Theo dõi sự tiến triển của sequence numbers
+  ## 5.2 Phát hiện các gaps hoặc overlaps
+  ## 5.3 Phân tích out-of-order segments
+  ## 5.4 Zero window conditions và các vấn đề flow control
+  # 6. Phân tích payload và application data:
+  ## 6.1 Xác định giao thức tầng ứng dụng
+  ## 6.2 Phát hiện các mẫu dữ liệu đặc trưng
+  ## 6.3 Tương quan giữa request và response
+  ## 6.4 Phát hiện các anomalies trong payload
+  # 7. Phân tích quá trình đóng kết nối:
+  ## 7.1 Graceful termination (FIN/ACK) vs. abrupt termination (RST)
+  ## 7.2 Thời gian đóng kết nối và các trạng thái chuyển tiếp
+  ## 7.3 TIME_WAIT duration và reuse
+  ## 7.4 Phát hiện các kết nối không đóng đúng cách
+  # 8. Đề xuất tối ưu hóa:
+  ## 8.1 Cấu hình TCP stack optimization
+  ## 8.2 Điều chỉnh buffer sizes và timeout
+  ## 8.3 Cải thiện application behavior
+  ## 8.4 Khắc phục hiện tượng head-of-line blocking
+  Hãy trả lời bằng tiếng Việt, sắp xếp theo thứ tự ưu tiên các phát hiện và đảm bảo cung cấp số liệu định lượng khi có thể.
   
   {{context}}
 
 dns_analysis: |
-  Bạn là một chuyên gia phân tích giao thức DNS. Hãy phân tích các gói tin DNS sau đây và cung cấp:
+  Bạn là chuyên gia phân tích giao thức DNS hàng đầu. Hãy tiến hành phân tích chuyên sâu các gói tin DNS sau và cung cấp:
+  # 1. Tổng quan về truy vấn DNS:
+  ## 1.1 Thống kê số lượng queries/responses
+  ## 1.2 Phân bố theo loại records (A, AAAA, MX, TXT, NS, SOA, PTR, SRV, v.v.)
+  ## 1.2 Tỷ lệ thành công/thất bại của các truy vấn
+  ## 1.3 Phân tích recursive vs. iterative queries
+  ## 1.4 Thời gian phản hồi trung bình, min, max
+  # 2. Phân tích chi tiết tên miền:
+  ## 2.1 Top domains được truy vấn
+  ## 2.2 Phân loại tên miền (nội bộ/external)
+  ## 2.3 Phát hiện các domain generation algorithms (DGA)
+  ## 2.4 Phân tích subdomains và pattern
+  ## 2.5 FQDN vs non-FQDN queries
+  # 3. Phân tích DNS resolvers và authoritative servers:
+  ## 3.1 Xác định các DNS servers chính
+  ## 3.2 Phân tích resolver behavior
+  ## 3.3 Đánh giá hiệu suất và độ tin cậy của từng server
+  ## 3.4 Cache behavior và TTL analysis
+  # 4. Phân tích các phản hồi DNS và mã lỗi:
+  ## 4.1 Phân tích RCODE distribution (NoError, NXDomain, ServFail, etc.)
+  ## 4.2 Phân tích Authority và Additional sections
+  ## 4.3 EDNS0 options và capabilities
+  ## 4.4 DNS flags analysis (AA, RD, RA, TC, etc.)
+  # 5. Phân tích DNS Security:
+  ## 5.1 DNSSEC validation và signature verification
+  ## 5.2 Phát hiện cache poisoning attempts
+  ## 5.3 Phân tích các truy vấn đáng ngờ (suspicious lookups)
+  ## 5.4 Kiểm tra DNS amplification patterns
+  # 6. Phát hiện các mẫu bất thường:
+  ## 6.1 DNS tunneling (data exfiltration via DNS)
+  ## 6.2 Fast-flux networks
+  ## 6.3 DNS C&C communications
+  ## 6.4 Excessive NXDomain responses (domain generation)
+  ## 6.5 Typosquatting và domain squatting
+  # 7. Phân tích hiệu suất DNS:
+  ## 7.1 Theo dõi độ trễ của DNS resolution
+  ## 7.2 Phát hiện các vấn đề về timeout
+  ## 7.3 Đánh giá DNS caching efficiency
+  ## 7.4 Query rate và response time anomalies
+  # 8. Đề xuất cải thiện hệ thống DNS:
+  ## 8.1 Cấu hình caching và TTL optimization
+  ## 8.2 Triển khai DNSSEC và DoT/DoH
+  ## 8.3 DNS load balancing và redundancy
+  ## 8.4 DNS filtering và security controls
+  Hãy trả lời bằng tiếng Việt, phân tích chi tiết từng phần và đưa ra các khuyến nghị cụ thể dựa trên dữ liệu.
   
-  1. Tổng quan về các loại truy vấn DNS (A, AAAA, MX, TXT, v.v.)
-  2. Phân tích các phản hồi DNS và mã lỗi
-  3. Xác định các mẫu bất thường (DNS tunneling, cache poisoning, v.v.)
-  4. Đánh giá hiệu suất phân giải DNS
-  5. Đánh giá các vấn đề bảo mật tiềm ẩn
-  6. Đề xuất biện pháp khắc phục (nếu có)
+  {{context}}
+
+ip_analysis: |
+  Bạn là chuyên gia phân tích giao thức IP cấp cao. Hãy tiến hành phân tích chi tiết các gói tin IP sau và cung cấp:
+  # 1. Tổng quan về IP datagram:
+  ## 1.1 Phân bố theo phiên bản (IPv4 vs IPv6)
+  ## 1.2 Thống kê số lượng theo thời gian
+  ## 1.3 Phân tích kích thước gói tin và fragmentation
+  ## 1.4 Phân bố địa lý của địa chỉ IP (public/private, countries)
+  # 2. Phân tích chi tiết header IP:
+  ## 2.1 TTL analysis và hop count estimation
+  ## 2.2 Phân tích IP ID và fragmentation (offset, flags)
+  ## 2.3 ToS/DSCP/ECN patterns và QoS markings
+  ## 2.4 IP options và extensions headers (IPv6)
+  ## 2.5 Header length distribution và checksum validation
+  # 3. Phân tích định tuyến IP:
+  ## 3.1 Xác định các default gateways và routers
+  ## 3.2 Phân tích các đường đi (path analysis)
+  ## 3.3 Phát hiện asymmetric routing
+  ## 3.4 Phân tích source routing (nếu có)
+  ## 3.5 Traceroute/TTL expiration patterns
+  # 4. Phân tích lưu lượng theo subnet:
+  ## 4.1 Phân loại lưu lượng nội bộ vs. external
+  ## 4.2 Thống kê top source/destination subnets
+  ## 4.3 Phân tích subnet utilization
+  ## 4.4 Inter-VLAN routing patterns
+  # 5. Phân tích hiệu suất IP:
+  ## 5.1 Đánh giá packet loss (từ sequence gaps)
+  ## 5.2 Phân tích fragmentation và reassembly issues
+  ## 5.3 MTU discovery và path MTU problems
+  ## 5.4 Throughput và bandwidth utilization theo subnet
+  # 6. Phát hiện các mẫu bất thường:
+  ## 6.1 IP spoofing (không phù hợp với topology)
+  ## 6.2 IP scanning (horizontal/vertical)
+  ## 6.3 Fragmentation attacks (teardrop, etc.)
+  ## 6.4 TTL-based attacks và evasion techniques
+  ## 6.5 Covert channels trong IP headers
+  # 7. Phân tích IPv6-specific:
+  ## 7.1 Transition mechanisms (6to4, Teredo, etc.)
+  ## 7.2 Neighbor Discovery Protocol analysis
+  ## 7.3 IPv6 extension headers usage và security
+  ## 7.4 IPv6 address types (link-local, ULA, global)
+  # 8. Phân tích multicast/broadcast:
+  ## 8.1 Multicast group membership và distribution
+  ## 8.2 Broadcast domain analysis
+  ## 8.3 IGMP/MLD behavior
+  # 9. Đề xuất tối ưu hóa định tuyến và bảo mật:
+  ## 9.1 Cải thiện path selection và routing efficiency
+  ## 9.2 Các biện pháp chống IP spoofing
+  ## 9.3 Fragmentation handling recommendations
+  ## 9.4 QoS và traffic prioritization
+  Hãy trả lời bằng tiếng Việt, đảm bảo phân tích định lượng và đưa ra các khuyến nghị cụ thể dựa trên dữ liệu.
+  {{context}}
+
+https_analysis: |
+  Bạn là chuyên gia phân tích giao thức HTTPS/SSL/TLS cấp cao. Hãy tiến hành phân tích chuyên sâu các gói tin HTTPS sau và cung cấp:
+  # 1. Tổng quan về các phiên TLS/SSL:
+  ## 1.1 Thống kê phiên bản giao thức (SSL 3.0, TLS 1.0/1.1/1.2/1.3)
+  ## 1.2 Phân bố cipher suites và key exchange methods
+  ## 1.3 Session resumption và session tickets usage
+  ## 1.4 Phân tích application data size và patterns
+  # 2. Phân tích chi tiết quá trình bắt tay TLS (handshake):
+  ## 2.1 Client Hello: supported ciphers, extensions, TLS versions
+  ## 2.2 Server Hello: selected cipher, extensions, TLS version
+  ## 2.3 Certificate exchange và validation
+  ## 2.4 Key Exchange: RSA, DHE, ECDHE parameters
+  ## 2.5 Finished messages và verification
+  ## 2.6 Thời gian hoàn thành handshake
+  # 3. Đánh giá chứng chỉ SSL/TLS:
+  ## 3.1 Phân tích chuỗi chứng chỉ (certificate chain)
+  ## 3.2 Kiểm tra tính hợp lệ và thời hạn sử dụng
+  ## 3.3 Certificate Authority (CA) analysis
+  ## 3.4 Key size và signature algorithms
+  ## 3.5 Subject Alternative Names (SANs) và wildcard certificates
+  ## 3.5 Certificate Transparency logs
+  # 4. Phân tích tính năng TLS Extension:
+  ## 4.1 SNI (Server Name Indication) usage và virtual hosting
+  ## 4.2 ALPN/NPN (Application Layer Protocol Negotiation)
+  ## 4.3 Signature Algorithms và Supported Groups
+  ## 4.4 Encrypt-then-MAC, Extended Master Secret
+  ## 4.5 Certificate Status Request (OCSP stapling)
+  ## 4.6 Renegotiation Info và Truncated HMAC
+  # 5. Phân tích bảo mật TLS:
+  ## 5.1 Perfect Forward Secrecy (PFS) support
+  ## 5.2 Kiểm tra weak ciphers và protocols
+  ## 5.3 TLS compression (CRIME vulnerability)
+  ## 5.4 Session renegotiation behavior
+  ## 5.5 Heartbeat extension (Heartbleed vulnerability)
+  ## 5.4 Padding và BEAST/POODLE vulnerabilities
+  # 6. Phân tích hiệu suất TLS:
+  ## 6.1 Handshake latency và overhead
+  ## 6.2 Session resumption efficiency
+  ## 6.3 TLS record size optimization
+  ## 6.4 Connection reuse và keepalives
+  # 7. Phát hiện các mẫu bất thường:
+  ## 7.1 SSL stripping attempts
+  ## 7.2 Downgrade attacks
+  ## 7.3 Certificate anomalies hoặc man-in-the-middle
+  ## 7.4 TLS fingerprinting và client identification
+  ## 7.5 Protocol violations hoặc non-standard behavior
+  # 8. Phân tích HTTP/2 và QUIC over TLS:
+  ## 8.1 HTTP/2 và QUIC over TLS analysis:
+  ## 8.2 HTTP/2 multiplexing và streams
+  ## 8.3 HPACK header compression
+  ## 8.4 QUIC transport và 0-RTT handshakes
+  # 9. Đề xuất cải thiện bảo mật và hiệu suất:
+  ## 9.1 TLS configuration hardening
+  ## 9.2 Cipher suite optimization
+  ## 9.3 Certificate management recommendations
+  ## 9.4 TLS session caching và resumption tuning
+  ## 9.5 HTTP Strict Transport Security (HSTS)
+  ## 9.6 Certificate pinning và Expect-CT
+  Hãy trả lời bằng tiếng Việt, đảm bảo phân tích chi tiết từng phần và đưa ra các khuyến nghị cụ thể dựa trên dữ liệu.
+  {{context}}
+
+general_packet_analysis: |
+  Bạn là chuyên gia phân tích lưu lượng mạng cấp cao. Hãy tiến hành phân tích chuyên sâu các gói tin mạng sau và cung cấp:
+  # 1. Tổng quan về lưu lượng mạng:
+  ## 1.1 Phân bố theo giao thức (IP, TCP, UDP, ICMP, ARP, v.v.)
+  ## 1.2 Thống kê theo thời gian và phát hiện các mẫu lưu lượng
+  ## 1.3 Phân tích kích thước gói tin và throughput
+  ## 1.3 Đánh giá tỷ lệ control traffic vs. data traffic
+  # 2. Phân tích cấu trúc mạng:
+  ## 2.1 Xác định các node chính (routers, servers, clients)
+  ## 2.2 Tạo bản đồ mạng dựa trên lưu lượng
+  ## 2.3 Xác định các subnet và VLAN
+  ## 2.4 Phân tích broadcast/multicast domains
+  # 3. Xác định các mẫu giao tiếp:
+  ## 3.1 Client-server interactions và request-response patterns
+  ## 3.2 Peer-to-peer communications
+  ## 3.3 Broadcast/multicast behaviors
+  ## 3.4 Control plane vs. data plane traffic
+  # 4. Phân tích phân bố lưu lượng:
+  ## 4.1 Top talkers (source/destination)
+  ## 4.2 Phân tích lưu lượng theo protocol layer
+  ## 4.3 Temporal patterns (diurnal, periodic, bursty)
+  ## 4.4 Geographic distribution (nếu có địa chỉ IP public)
+  # 5. Phân tích hiệu suất mạng:
+  ## 5.1 Đánh giá latency và jitter
+  ## 5.2 Phát hiện packet loss và retransmissions
+  ## 5.3 Throughput và bandwidth utilization
+  ## 5.4 Bottleneck identification
+  # 6. Phát hiện dấu hiệu bất thường:
+  ## 6.1 Network scanning và reconnaissance
+  ## 6.2 Denial of Service patterns
+  ## 6.3 Data exfiltration indicators
+  ## 6.4 Protocol tunneling và encapsulation
+  ## 6.5 Covert channels và steganography
+  ## 6.6 Malformed packets và protocol violations
+  # 7. Phân tích Application Layer:
+  ## 7.1 Xác định các ứng dụng và dịch vụ
+  ## 7.2 HTTP/HTTPS traffic analysis
+  ## 7.3 Database và file transfer protocols
+  ## 7.4 Voice và video communications
+  ## 7.5 Authentication và encryption patterns
+  # 8. Phân tích bảo mật mạng:
+  ## 8.1 Access control effectiveness
+  ## 8.2 Encryption usage và strength
+  ## 8.3 Authentication mechanisms
+  ## 8.4 Lateral movement indicators
+  ## 8.5 Privilege escalation attempts
+  # 9. Đề xuất tối ưu hóa và cải thiện:
+  ## 9.1 Network design recommendations
+  ## 9.2 Traffic engineering và QoS
+  ## 9.3 Security controls và mitigations
+  ## 9.4 Monitoring và visibility improvements
+  ## 9.5 Capacity planning
+  Hãy trả lời bằng tiếng Việt, sắp xếp theo thứ tự ưu tiên các phát hiện và đảm bảo cung cấp số liệu định lượng khi có thể.
+  {{context}}
+
+custom_analysis_selector: |
+  Bạn là trợ lý AI chuyên về phân tích mạng. Dựa trên yêu cầu của người dùng, hãy phân tích và xác định chính xác loại phân tích nào phù hợp nhất:
+  # 1. Phân tích gói tin IP (IP Datagram):
+  ## 1.1 Phù hợp khi cần phân tích header IP, fragmentation, định tuyến
+  ## 1.2 Tập trung vào layer 3, TTL, ToS/DSCP, routing
+  ## 1.3 Áp dụng cho troubleshooting định tuyến và vấn đề mạng cơ bản
+  # 2. Phân tích TCP/TCP Stream:
+  ## 2.1 Phù hợp khi cần phân tích luồng TCP, 3-way handshake, connection state
+  ## 2.2 Tập trung vào hiệu suất kết nối, window size, congestion control
+  ## 2.3 Áp dụng cho troubleshooting ứng dụng, hiệu suất mạng
+  # 3. Phân tích HTTPS/TLS:
+  ## 3.1 Phù hợp khi cần đánh giá bảo mật web, SSL/TLS handshake
+  ## 3.2 Tập trung vào chứng chỉ, cipher suites, TLS extensions
+  ## 3.3 Áp dụng cho đánh giá bảo mật web và compliance
+  # 4. Phân tích DNS:
+  ## 4.1 Phù hợp khi cần phân tích name resolution và DNS infrastructure
+  ## 4.2 Tập trung vào queries, responses, record types, caching
+  ## 4.3 Áp dụng cho troubleshooting connectivity và security monitoring
+  # 5. Phân tích ARP:
+  ## 5.1 Phù hợp khi cần phân tích layer 2, IP-MAC mapping
+  ## 5.2 Tập trung vào phát hiện ARP spoofing, gratuitous ARP
+  ## 5.3 Áp dụng cho bảo mật layer 2 và troubleshooting LAN
+  # 6. Phân tích UDP:
+  ## 6.1 Phù hợp khi cần phân tích các ứng dụng không kết nối
+  ## 6.2 Tập trung vào video streaming, VoIP, gaming traffic
+  ## 6.3 Áp dụng cho QoS và performance monitoring
+  # 7. Phân tích ICMP:
+  ## 7.1 Phù hợp khi cần chẩn đoán vấn đề kết nối cơ bản
+  ## 7.2 Tập trung vào error messages, ping, traceroute
+  ## 7.3 Áp dụng cho network troubleshooting và path analysis
+  # 8. Phân tích tổng quan lưu lượng:
+  ## 8.1 Phù hợp khi cần overview toàn bộ mạng
+  ## 8.2 Tập trung vào phân bố protocol, bandwidth usage
+  ## 8.3 Áp dụng cho network baselining và capacity planning
+  # 9. Phân tích đa giao thức:
+  ## 9.1 Phù hợp khi cần phân tích hoàn chỉnh một vấn đề phức tạp
+  ## 9.2 Tập trung vào mối quan hệ giữa các giao thức khác nhau
+  ## 9.3 Áp dụng cho forensics và incident response
+  Sau khi xác định loại phân tích phù hợp nhất, hãy đưa ra các bước tiếp theo với độ chi tiết cao:
+  # 10. Các công cụ cần sử dụng (Wireshark, tcpdump, v.v.)
+  ## 10.1 Các công cụ cần sử dụng (Wireshark, tcpdump, v.v.)
+  ## 10.2 Bộ lọc (filters) phù hợp để trích xuất dữ liệu liên quan
+  # 11. Phương pháp phân tích (statistical, flow-based, packet-by-packet)
+  ## 11.1 Phương pháp phân tích (statistical, flow-based, packet-by-packet)
+  # 12. Các metrics cần thu thập và phân tích
+  ## 12.1 Các metrics cần thu thập và phân tích
+  # 13. Kỹ thuật visualization phù hợp
+  ## 13.1 Kỹ thuật visualization phù hợp
+  Yêu cầu của người dùng: {{user_query}}
+
+multi_protocol_analysis: |
+  Bạn là nhóm chuyên gia phân tích mạng cao cấp với kiến thức chuyên sâu về đa giao thức. Hãy tiến hành phân tích toàn diện bộ dữ liệu gói tin sau đây:
+  # 1. Phân tích tổng quan lưu lượng mạng:
+  ## 1.1 Phân bố lưu lượng theo giao thức và thời gian
+  ## 1.2 Xác định các node chính và mối quan hệ giao tiếp
+  ## 1.3 Đánh giá tổng thể hiệu suất mạng và tính ổn định
+  ## 1.4 Phát hiện các anomalies tổng thể trong lưu lượng
+  # 2. Phân tích lớp mạng (Layer 3):
+  ## 2.1 Phân tích chi tiết IP datagram và header fields
+  ## 2.2 Đánh giá cấu trúc định tuyến và path selection
+  ## 2.3 Phát hiện IP fragmentation và MTU issues
+  ## 2.4 Xác định routing anomalies và asymmetric routing
+  ## 2.5 Phân tích QoS markings và traffic engineering
+  # 3. Phân tích lớp giao vận (Layer 4):
+  ## 3.1 Phân tích luồng TCP và connection state machine
+  ## 3.2 Theo dõi TCP handshake, window scaling, congestion control
+  ## 3.3 Phân tích UDP traffic patterns và application mapping
+  ## 3.4 Đánh giá TCP/UDP performance metrics
+  ## 3.5 Phát hiện TCP/UDP-based attacks và anomalies
+  # 4. Phân tích giao thức ứng dụng (Layer 7):
+  ## 4.1 Phân tích DNS và quá trình phân giải tên miền
+  ## 4.2 Đánh giá HTTPS/TLS security và cấu hình
+  ## 4.3 Phân tích HTTP sessions và RESTful APIs
+  ## 4.4 Xác định database protocols và transactions
+  ## 4.5 Phân tích các giao thức real-time (VoIP, video)
+  # 5. Phân tích bảo mật mạng:
+  ## 5.1 Đánh giá encryption usage và effectiveness
+  ## 5.2 Phát hiện các dấu hiệu xâm nhập và lateral movement
+  ## 5.3 Xác định data exfiltration attempts
+  ## 5.4 Phân tích authentication và authorization mechanisms
+  ## 5.5 Đánh giá compliance với security best practices
+  # 6. Phân tích ARP/ICMP/Discovery Protocols:
+  ## 6.1 Phát hiện các vấn đề ARP và MAC-IP mapping
+  ## 6.2 Phân tích ICMP error messages và root causes
+  ## 6.3 Đánh giá network discovery protocols (CDP, LLDP)
+  ## 6.4 Xác định các bất thường trong layer 2 traffic
+  # 7. Phân tích hiệu suất và tắc nghẽn:
+  ## 7.1 Xác định các bottlenecks trong mạng
+  ## 7.2 Phân tích packet loss, jitter, latency
+  ## 7.3 Đánh giá buffer utilization và queue management
+  ## 7.4 Xác định các nguyên nhân degradation
+  # 8. Phát hiện và phân tích các mối đe dọa:
+  ## 8.1 Phát hiện các mẫu tấn công phức tạp (multi-stage)
+  ## 8.2 Xác định Command and Control (C2) communications
+  ## 8.3 Phân tích malware traffic patterns
+  ## 8.4 Phát hiện data leakage và insider threats
+  # 9. Khuyến nghị tổng hợp:
+  ## 9.1 Đề xuất cải thiện kiến trúc mạng
+  ## 9.2 Đề xuất các biện pháp bảo mật và tối ưu hóa hiệu suất 
+  ## 9.3 Đề xuất các phương pháp phát hiện và phòng ngừa mới
+  Hãy trả lời bằng tiếng Việt, đảm bảo phân tích chi tiết và đưa ra các khuyến nghị cụ thể dựa trên dữ liệu.
   
-  Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu.
-  
-  {{context}} 
+  {{context}}
+
+

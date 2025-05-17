@@ -4,6 +4,9 @@ Provides methods for analyzing network protocols using specialized agents.
 """
 from typing import Dict, Any, List, Optional
 
+from src.infrastructure.repositories.yaml_prompt_repository import YamlPromptRepository
+from src.use_cases.prompt_service import PromptService
+
 
 class ProtocolAnalyzer:
     """Analyzer for network protocols using specialized agents from SmolagentGateway."""
@@ -16,6 +19,8 @@ class ProtocolAnalyzer:
             smolagent_gateway: SmolagentGateway instance containing specialized agents
         """
         self.smolagent_gateway = smolagent_gateway
+        self.prompt_repository = PromptService(prompt_repository=YamlPromptRepository())
+
         self.protocol_agents = {
             # Map protocols to their respective agents
             "TCP": self.smolagent_gateway.tcp_agent,
@@ -169,35 +174,92 @@ class ProtocolAnalyzer:
 
         # Add protocol-specific prompts
         if protocol.upper() == "TCP":
-            prompt += """
-            Tập trung phân tích:
-            1. Các cờ TCP và ý nghĩa của chúng trong luồng dữ liệu
-            2. Sequence và acknowledgment numbers
-            3. Quá trình thiết lập và kết thúc kết nối
-            4. Retransmissions và flow control
-            5. Xác định các dấu hiệu tấn công TCP (SYN flood, RST injection, etc.)
-            """
+            prompt += PromptService.get_formatted_prompt(
+                prompt_name="protocol_analysis",
+                type_name="tcp_analysis",
+                context={"packets": packets},
+                self=self.prompt_repository
+            )
         elif protocol.upper() == "UDP":
-            prompt += """
-            Tập trung phân tích:
-            1. Cổng nguồn và đích phổ biến
-            2. Kích thước datagram
-            3. Ứng dụng đang sử dụng UDP
-            4. Xác định các dấu hiệu tấn công UDP (UDP flood, amplification, etc.)
-            """
+            prompt += PromptService.get_formatted_prompt(
+                prompt_name="protocol_analysis",
+                type_name="udp_analysis",
+                context={"packets": packets},
+                self=self.prompt_repository
+            )
         elif protocol.upper() == "ICMP":
-            prompt += """
-            Tập trung phân tích:
-            1. Các loại và mã ICMP
-            2. Phân tích Echo Request/Reply
-            3. Các thông báo lỗi ICMP
-            4. Xác định các dấu hiệu tấn công ICMP (ICMP flood, Ping of Death, etc.)
+            prompt += PromptService.get_formatted_prompt(
+                prompt_name="protocol_analysis",
+                type_name="icmp_analysis",
+                context={"packets": packets},
+                self=self.prompt_repository
+            )
+        elif protocol.upper() == "IP":
+            prompt += PromptService.get_formatted_prompt(
+                prompt_name="protocol_analysis",
+                type_name="ip_analysis",
+                context={"packets": packets},
+                self=self.prompt_repository
+            )
+        elif protocol.upper() == "ARP":
+            prompt += PromptService.get_formatted_prompt(
+                prompt_name="protocol_analysis",
+                type_name="arp_analysis",
+                context={"packets": packets},
+                self=self.prompt_repository
+            )
+        elif protocol.upper() == "DNS":
+            prompt += PromptService.get_formatted_prompt(
+                prompt_name="protocol_analysis",
+                type_name="dns_analysis",
+                context={"packets": packets},
+                self=self.prompt_repository
+            )
+        elif protocol.upper() in ["HTTP", "HTTPS"]:
+            prompt += PromptService.get_formatted_prompt(
+                prompt_name="protocol_analysis",
+                type_name="http_analysis",
+                context={"packets": packets},
+                self=self.prompt_repository
+            )
+        elif protocol.upper() == "TLS":
+            prompt += PromptService.get_formatted_prompt(
+                prompt_name="protocol_analysis",
+                type_name="tls_analysis",
+                context={"packets": packets},
+                self=self.prompt_repository
+            )
+        elif protocol.upper() == "ETHERNET":
+            prompt += PromptService.get_formatted_prompt(
+                prompt_name="protocol_analysis",
+                type_name="ethernet_analysis",
+                context={"packets": packets},
+                self=self.prompt_repository
+            )
+        else:
+            # Fallback for any unhandled protocols
+            prompt += f"""
+            Hãy phân tích các khía cạnh sau:
+            1. Thống kê chung (số lượng, kích thước, phân bố thời gian)
+            2. Các trường header quan trọng và ý nghĩa của chúng
+            3. Luồng dữ liệu và mối quan hệ giữa các gói tin
+            4. Bất thường hoặc điểm đáng chú ý
+            5. Đánh giá hiệu suất và độ tin cậy
+            6. Các vấn đề bảo mật tiềm ẩn (nếu có)
+
+            Chi tiết gói tin:
+            {packets[:5] if len(packets) > 5 else packets}
             """
 
-        # Common footer
-        prompt += """
-        Hãy trình bày phân tích chi tiết, đưa ra nhận xét và kết luận dựa trên dữ liệu. 
-        Nếu có vấn đề hoặc bất thường, hãy chỉ ra rõ ràng và cung cấp giải thích.
-        """
+        # Add analysis type-specific instructions if provided
+        if analysis_type:
+            if analysis_type.lower() == "security":
+                prompt += "\nTập trung phân tích các khía cạnh bảo mật, phát hiện dấu hiệu tấn công, quét, hoặc hành vi bất thường."
+            elif analysis_type.lower() == "performance":
+                prompt += "\nTập trung phân tích hiệu suất, độ trễ, tỷ lệ lỗi, và các vấn đề ảnh hưởng đến hiệu quả truyền thông."
+            elif analysis_type.lower() == "troubleshooting":
+                prompt += "\nTập trung phân tích các lỗi kết nối, vấn đề cấu hình, và đề xuất các giải pháp khắc phục."
+            elif analysis_type.lower() == "forensics":
+                prompt += "\nTập trung vào điều tra chuyên sâu, dấu vết hoạt động, và tái tạo các sự kiện từ dữ liệu gói tin."
 
         return prompt

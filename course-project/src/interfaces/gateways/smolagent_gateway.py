@@ -27,6 +27,7 @@ SmolagentsInstrumentor().instrument()
 # Biến toàn cục để lưu kết quả markdown cuối cùng
 LATEST_ANALYSIS_MARKDOWN = ""
 
+
 class SmolagentGateway:
     """Gateway for interfacing with smolagent framework."""
 
@@ -99,9 +100,14 @@ class SmolagentGateway:
 
     def _initialize_agents(self):
         """Initialize specialized agents for network analysis."""
+        tools = [
+            DuckDuckGoSearchTool(),
+            VisitWebpageTool(),
+            # Add other tools as needed
+        ]
         # Search agent (support utility)
         self.search_agent = ToolCallingAgent(
-            tools=[DuckDuckGoSearchTool(), VisitWebpageTool()],
+            tools=tools,
             model=self.model,
             name="search_agent",
             description="This agent performs web searches to get up-to-date information about network protocols and vulnerabilities."
@@ -109,7 +115,7 @@ class SmolagentGateway:
 
         # Packet analyzer agent (general packet analysis agent)
         self.packet_analyzer_agent = ToolCallingAgent(
-            tools=[],
+            tools=tools,
             model=self.model,
             name="packet_analyzer_agent",
             description="This agent specializes in detailed packet inspection, analyzing protocol headers, flags, and payload data to identify anomalies.",
@@ -119,7 +125,7 @@ class SmolagentGateway:
         # LAYER 2 - DATA LINK
         # Ethernet agent (Layer 2)
         self.ethernet_agent = ToolCallingAgent(
-            tools=[],
+            tools=tools,
             model=self.model,
             name="ethernet_agent",
             description="This agent specializes in Ethernet frame analysis, focusing on MAC addressing, VLAN tagging, and layer 2 collisions or errors.",
@@ -128,7 +134,7 @@ class SmolagentGateway:
 
         # ARP agent (Layer 2-3)
         self.arp_agent = ToolCallingAgent(
-            tools=[],
+            tools=tools,
             model=self.model,
             name="arp_agent",
             description="This agent specializes in ARP protocol analysis, focusing on ARP spoofing detection, MAC-IP mapping conflicts, and ARP cache poisoning.",
@@ -138,7 +144,7 @@ class SmolagentGateway:
         # LAYER 3 - NETWORK
         # IPv4/IPv6 agent (Layer 3)
         self.ip_agent = ToolCallingAgent(
-            tools=[],
+            tools=tools,
             model=self.model,
             name="ip_agent",
             description="This agent specializes in IP protocol analysis, focusing on IP fragmentation, TTL issues, routing problems, and IPv4/IPv6 specific features.",
@@ -147,7 +153,7 @@ class SmolagentGateway:
 
         # ICMP agent (Layer 3)
         self.icmp_agent = ToolCallingAgent(
-            tools=[],
+            tools=tools,
             model=self.model,
             name="icmp_agent",
             description="This agent specializes in ICMP protocol analysis, focusing on unusual echo patterns, tunnel detection, and ICMP flooding.",
@@ -157,7 +163,7 @@ class SmolagentGateway:
         # LAYER 4 - TRANSPORT
         # TCP agent (Layer 4)
         self.tcp_agent = ToolCallingAgent(
-            tools=[],
+            tools=tools,
             model=self.model,
             name="tcp_agent",
             description="This agent specializes in TCP protocol analysis, focusing on handshake analysis, flags, sequence numbers, and potential TCP-specific attacks.",
@@ -166,7 +172,7 @@ class SmolagentGateway:
 
         # UDP agent (Layer 4)
         self.udp_agent = ToolCallingAgent(
-            tools=[],
+            tools=tools,
             model=self.model,
             name="udp_agent",
             description="This agent specializes in UDP protocol analysis, focusing on connectionless communication, datagram issues, and UDP-specific attacks.",
@@ -176,7 +182,7 @@ class SmolagentGateway:
         # LAYER 5 - SESSION
         # Session agent (Layer 5)
         self.session_agent = ToolCallingAgent(
-            tools=[],
+            tools=tools,
             model=self.model,
             name="session_agent",
             description="This agent specializes in Session layer protocols analysis, focusing on session establishment, management, and termination. Analyzes protocols like SIP, NetBIOS, RPC, and SMB.",
@@ -186,7 +192,7 @@ class SmolagentGateway:
         # LAYER 6 - PRESENTATION
         # TLS/SSL agent (Layer 6)
         self.tls_agent = ToolCallingAgent(
-            tools=[],
+            tools=tools,
             model=self.model,
             name="tls_agent",
             description="This agent specializes in TLS/SSL protocol analysis, focusing on handshake issues, certificate validation, cipher suites, and encryption vulnerabilities.",
@@ -196,7 +202,7 @@ class SmolagentGateway:
         # LAYER 7 - APPLICATION
         # DNS agent (Layer 7)
         self.dns_agent = ToolCallingAgent(
-            tools=[],
+            tools=tools,
             model=self.model,
             name="dns_agent",
             description="This agent specializes in DNS protocol analysis, focusing on DNS queries/responses, cache poisoning, tunneling, and zone transfers.",
@@ -205,7 +211,7 @@ class SmolagentGateway:
 
         # HTTP/HTTPS agent (Layer 7)
         self.http_agent = ToolCallingAgent(
-            tools=[],
+            tools=tools,
             model=self.model,
             name="http_agent",
             description="This agent specializes in HTTP/HTTPS protocol analysis, focusing on request/response patterns, status codes, headers, and web-based attacks.",
@@ -215,7 +221,7 @@ class SmolagentGateway:
         # ATTACK DETECTION AGENT
         # Attack detection agent
         self.attack_agent = ToolCallingAgent(
-            tools=[],
+            tools=tools,
             model=self.model,
             name="attack_agent",
             description="This agent specializes in correlating evidence from multiple sources to identify attack patterns and provide threat intelligence.",
@@ -233,7 +239,11 @@ class SmolagentGateway:
             model=self.model,
             name="analyst_agent",
             description="This is the main coordinator that analyzes network traffic patterns and synthesizes findings.",
-            managed_agents=[self.packet_analyzer_agent, self.search_agent]
+            managed_agents=[self.ethernet_agent, self.arp_agent,
+                            self.ip_agent, self.icmp_agent,
+                            self.tcp_agent, self.udp_agent,
+                            self.session_agent, self.tls_agent,
+                            self.dns_agent, self.http_agent]
         )
 
     def format_result_to_markdown(self, result: Dict[str, Any]) -> str:
@@ -247,7 +257,7 @@ class SmolagentGateway:
             Chuỗi markdown chứa kết quả phân tích
         """
         global LATEST_ANALYSIS_MARKDOWN
-        
+
         if not result:
             return "Không có kết quả phân tích."
 
@@ -341,7 +351,7 @@ class SmolagentGateway:
         if not isinstance(result, dict):
             # Nếu kết quả không phải là từ điển hoặc chuỗi, chuyển về chuỗi và trả về
             return f"## Phân tích\n\n{str(result)}\n\n"
-            
+
         # Thêm tóm tắt nếu có
         if "summary" in result:
             markdown += f"## Tóm tắt\n\n{result['summary']}\n\n"
@@ -470,9 +480,9 @@ class SmolagentGateway:
         # Thêm các thông tin khác
         for key, value in result.items():
             if key not in ["summary", "analysis", "findings", "attack_detected", "attack_type",
-                          "confidence", "recommendations", "osi_layers", "tcp_analysis",
-                          "udp_analysis", "icmp_analysis", "arp_analysis", "dns_analysis",
-                          "http_analysis", "OSI Layer Analysis", "Conclusion", "New Detection Use Cases"]:
+                           "confidence", "recommendations", "osi_layers", "tcp_analysis",
+                           "udp_analysis", "icmp_analysis", "arp_analysis", "dns_analysis",
+                           "http_analysis", "OSI Layer Analysis", "Conclusion", "New Detection Use Cases"]:
 
                 title = key.replace("_", " ").title()
                 markdown += f"## {title}\n\n"
@@ -869,7 +879,8 @@ class SmolagentGateway:
             # Sử dụng prompt từ file YAML
             return self.prompt_service.get_formatted_prompt(
                 "raw_packet_analysis",
-                {"context": formatted_info}
+                {"context": formatted_info},
+                "osi_analysis"
             )
 
     def _format_packets_info(self, packets: List) -> str:
@@ -901,14 +912,44 @@ class SmolagentGateway:
 
         base_prompt += "\n## Phân bố giao thức\n"
         for proto, count in protocols.items():
-            base_prompt += f"- {proto}: {count} gói tin\n"
+            base_prompt += f"- {proto}: {count} gói tin ({(count / len(packets)) * 100:.2f}%)\n"
 
         # Thêm thông tin chi tiết về một số gói tin (giới hạn để tránh prompt quá dài)
         base_prompt += "\n## Chi tiết các gói tin mẫu\n"
-        sample_count = min(20, len(packets))  # Tăng số lượng gói tin mẫu lên 20
 
-        for i, packet in enumerate(packets[:sample_count]):
-            base_prompt += f"\n### Gói tin #{i + 1}\n"
+        # Cải tiến cách lấy mẫu: Nếu có nhiều hơn 25 gói tin, lấy mẫu đầu, giữa và cuối
+        MAX_SAMPLES = 30
+        if len(packets) <= MAX_SAMPLES:
+            sample_packets = packets
+        else:
+            # Lấy mẫu: đầu, giữa và cuối
+            head_count = MAX_SAMPLES // 3
+            mid_count = MAX_SAMPLES // 3
+            tail_count = MAX_SAMPLES - head_count - mid_count
+
+            head_packets = packets[:head_count]
+            mid_start = max(head_count, len(packets) // 2 - mid_count // 2)
+            mid_packets = packets[mid_start:mid_start + mid_count]
+            tail_packets = packets[max(mid_start + mid_count, len(packets) - tail_count):]
+
+            sample_packets = head_packets + mid_packets + tail_packets
+            base_prompt += f"*Ghi chú: Hiển thị {MAX_SAMPLES} gói tin mẫu từ đầu, giữa và cuối để đại diện cho {len(packets)} gói tin*\n\n"
+
+        # Lấy thống kê về giao thức của các gói tin mẫu
+        sample_protocols = {}
+        for packet in sample_packets:
+            proto = getattr(packet, 'protocol', 'Unknown')
+            sample_protocols[proto] = sample_protocols.get(proto, 0) + 1
+
+        if len(packets) > MAX_SAMPLES:
+            base_prompt += f"Phân bố giao thức trong mẫu: "
+            proto_list = [f"{proto}: {count} gói tin" for proto, count in sample_protocols.items()]
+            base_prompt += ", ".join(proto_list) + "\n\n"
+
+        for i, packet in enumerate(sample_packets):
+            # Hiển thị thông tin về vị trí của gói tin trong danh sách gốc nếu là mẫu
+            packet_idx = packets.index(packet) if len(packets) > MAX_SAMPLES else i
+            base_prompt += f"\n### Gói tin #{packet_idx + 1}\n"
 
             # Thông tin cơ bản về gói
             for attr in ['protocol', 'src_ip', 'dst_ip', 'src_port', 'dst_port', 'timestamp', 'length']:
@@ -973,20 +1014,8 @@ class SmolagentGateway:
                         if hasattr(packet, attr):
                             base_prompt += f"- {attr}: {getattr(packet, attr)}\n"
 
-        if len(packets) > sample_count:
-            base_prompt += f"\n*...và {len(packets) - sample_count} gói tin khác...*\n"
-
-        # Yêu cầu cụ thê hơn về phân tích
-
-        base_prompt += "\n## Yêu cầu phân tích chi tiết\n"
-        base_prompt += "Dựa trên các gói tin trên, hãy phân tích:\n"
-        base_prompt += "1. Các vấn đề kết nối mạng hiện tại hoặc tiềm ẩn\n"
-        base_prompt += "2. Dấu hiệu cụ thể của các cuộc tấn công nếu có\n"
-        base_prompt += "3. Phân tích theo mô hình OSI - xác định vấn đề ở từng tầng\n"
-        base_prompt += "4. Đánh giá tỷ lệ các gói tin TCP reset, retransmission và failed connections\n"
-        base_prompt += "5. Phân tích timeout hoặc latency bất thường\n"
-        base_prompt += "6. Đề xuất giải pháp và các lệnh debug cụ thể\n"
-        base_prompt += "7. Kết luận về nguyên nhân gốc rễ của vấn đề\n"
+        if len(packets) > MAX_SAMPLES:
+            base_prompt += f"\n*Ghi chú: Đã lấy mẫu {len(sample_packets)} gói tin từ tổng số {len(packets)} gói tin.*\n"
 
         return base_prompt
 
@@ -1013,3 +1042,726 @@ class SmolagentGateway:
                 return result
 
         return self.format_result_to_markdown(result)
+
+    def export_packets_to_csv(self, packets: List, output_file: str = "data/packets/packets_analysis.csv") -> str:
+        """
+        Xuất danh sách gói tin sang file CSV để xử lý dữ liệu lớn.
+        
+        Args:
+            packets: Danh sách các gói tin cần xuất
+            output_file: Đường dẫn đến file CSV đầu ra
+            
+        Returns:
+            Đường dẫn đến file CSV đã tạo
+        """
+        import csv
+        import os
+
+        # Đảm bảo thư mục tồn tại
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+        # Xác định tất cả các trường có thể có
+        all_fields = set(['protocol', 'src_ip', 'dst_ip', 'src_port', 'dst_port', 'timestamp', 'length'])
+
+        # Thêm các trường đặc biệt cho từng giao thức
+        protocol_fields = {
+            'TCP': ['flags', 'seq_num', 'ack_num', 'window_size'],
+            'ICMP': ['icmp_type', 'icmp_code', 'icmp_id', 'icmp_seq'],
+            'ARP': ['src_mac', 'dst_mac', 'sender_ip', 'sender_mac', 'target_ip', 'target_mac', 'operation'],
+            'UDP': ['length', 'checksum', 'payload_length'],
+            'DNS': ['query_name', 'query_type', 'answer', 'response_code'],
+            'DHCP': ['message_type', 'client_mac', 'requested_ip', 'client_ip', 'server_ip']
+        }
+
+        # Thu thập tất cả các trường từ tất cả các gói
+        for packet in packets:
+            proto = getattr(packet, 'protocol', 'Unknown')
+            if proto in protocol_fields:
+                for field in protocol_fields[proto]:
+                    all_fields.add(field)
+
+            # Thêm bất kỳ trường nào khác mà gói tin có thể có
+            for attr in dir(packet):
+                if not attr.startswith('_') and not callable(getattr(packet, attr)):
+                    all_fields.add(attr)
+
+        # Chuyển thành list để có thứ tự cố định
+        fieldnames = sorted(list(all_fields))
+
+        with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+
+            for packet in packets:
+                row = {}
+                # Điền các giá trị có sẵn
+                for field in fieldnames:
+                    if hasattr(packet, field):
+                        value = getattr(packet, field)
+                        if callable(value):
+                            continue
+                        row[field] = value
+                    else:
+                        row[field] = None
+
+                # Thêm các phương thức boolean nếu có
+                if hasattr(packet, 'protocol'):
+                    if packet.protocol == 'TCP':
+                        for method in ['is_syn', 'is_ack', 'is_rst', 'is_fin', 'is_psh', 'is_urg']:
+                            if hasattr(packet, method) and callable(getattr(packet, method)):
+                                try:
+                                    row[method] = getattr(packet, method)()
+                                except:
+                                    pass
+                    elif packet.protocol == 'ICMP':
+                        for method in ['is_echo_request', 'is_echo_reply', 'is_unreachable', 'is_redirect']:
+                            if hasattr(packet, method) and callable(getattr(packet, method)):
+                                try:
+                                    row[method] = getattr(packet, method)()
+                                except:
+                                    pass
+                    elif packet.protocol == 'ARP':
+                        for method in ['is_request', 'is_reply', 'is_announcement']:
+                            if hasattr(packet, method) and callable(getattr(packet, method)):
+                                try:
+                                    row[method] = getattr(packet, method)()
+                                except:
+                                    pass
+                    elif packet.protocol == 'DNS':
+                        for method in ['is_query', 'is_response', 'has_answers']:
+                            if hasattr(packet, method) and callable(getattr(packet, method)):
+                                try:
+                                    row[method] = getattr(packet, method)()
+                                except:
+                                    pass
+
+                writer.writerow(row)
+
+        print(f"Đã xuất {len(packets)} gói tin sang file CSV: {output_file}")
+        return output_file
+
+    def _convert_df_to_packets(self, df):
+        """
+        Chuyển DataFrame thành danh sách đối tượng gói tin.
+        
+        Args:
+            df: DataFrame chứa dữ liệu gói tin
+            
+        Returns:
+            Danh sách đối tượng gói tin dạng SimpleNamespace
+        """
+        from types import SimpleNamespace
+
+        packets = []
+        for _, row in df.iterrows():
+            # Loại bỏ các giá trị NaN
+            clean_dict = {}
+            for key, value in row.items():
+                # Kiểm tra nếu giá trị không phải NaN
+                import pandas as pd
+                import numpy as np
+                if not (pd.isna(value) or (isinstance(value, float) and np.isnan(value))):
+                    clean_dict[key] = value
+
+            # Tạo đối tượng từ dict đã làm sạch
+            packet = SimpleNamespace(**clean_dict)
+            packets.append(packet)
+
+        return packets
+
+    def _combine_chunk_results(self, results, overall_stats, total_count):
+        """
+        Tổng hợp kết quả từ các phần thành kết quả cuối cùng.
+        
+        Args:
+            results: Danh sách kết quả từ các phần
+            overall_stats: Thống kê tổng quan về gói tin
+            total_count: Tổng số gói tin đã phân tích
+            
+        Returns:
+            Kết quả phân tích tổng hợp
+        """
+        if not results:
+            return {"analysis": "Không có kết quả phân tích."}
+
+        # Khởi tạo kết quả tổng hợp
+        combined = {
+            "summary": f"Phân tích tổng cộng {total_count} gói tin",
+            "OSI Layer Analysis": {}
+        }
+
+        # Phân bố giao thức
+        combined["protocol_distribution"] = overall_stats["protocols"]
+
+        # Tổng hợp phân tích OSI Layer
+        osi_layers = [
+            "Physical Layer",
+            "Data Link Layer",
+            "Network Layer",
+            "Transport Layer",
+            "Session Layer",
+            "Presentation Layer",
+            "Application Layer"
+        ]
+
+        # Tổng hợp các vấn đề bảo mật theo tầng
+        security_issues_by_layer = {layer: [] for layer in osi_layers}
+        severity_by_layer = {layer: [] for layer in osi_layers}
+        recommendations_by_layer = {layer: [] for layer in osi_layers}
+
+        for result in results:
+            if isinstance(result, dict) and "OSI Layer Analysis" in result:
+                for layer, layer_info in result["OSI Layer Analysis"].items():
+                    if layer not in combined["OSI Layer Analysis"]:
+                        combined["OSI Layer Analysis"][layer] = {
+                            "analysis": "",
+                            "security_issues": [],
+                            "severity": 0,
+                            "recommendation": []
+                        }
+
+                    # Thêm vào phân tích
+                    if isinstance(layer_info, dict) and "analysis" in layer_info:
+                        current_analysis = combined["OSI Layer Analysis"][layer]["analysis"]
+                        new_analysis = layer_info["analysis"]
+                        if current_analysis and new_analysis:
+                            # Chỉ thêm nếu phân tích mới khác với phân tích hiện tại
+                            if new_analysis not in current_analysis:
+                                combined["OSI Layer Analysis"][layer]["analysis"] += " " + new_analysis
+                        elif new_analysis:
+                            combined["OSI Layer Analysis"][layer]["analysis"] = new_analysis
+
+                    # Thu thập vấn đề bảo mật
+                    if isinstance(layer_info, dict) and "security_issues" in layer_info:
+                        issues = layer_info["security_issues"]
+                        if isinstance(issues, list):
+                            for issue in issues:
+                                if issue not in security_issues_by_layer[layer]:
+                                    security_issues_by_layer[layer].append(issue)
+                        elif isinstance(issues, str) and issues not in security_issues_by_layer[layer]:
+                            security_issues_by_layer[layer].append(issues)
+
+                    # Thu thập mức độ nghiêm trọng
+                    if isinstance(layer_info, dict) and "severity" in layer_info:
+                        try:
+                            severity = float(layer_info["severity"])
+                            severity_by_layer[layer].append(severity)
+                        except (ValueError, TypeError):
+                            pass
+
+                    # Thu thập khuyến nghị
+                    if isinstance(layer_info, dict) and "recommendation" in layer_info:
+                        recommendations = layer_info["recommendation"]
+                        if isinstance(recommendations, list):
+                            for rec in recommendations:
+                                if rec not in recommendations_by_layer[layer]:
+                                    recommendations_by_layer[layer].append(rec)
+                        elif isinstance(recommendations, str) and recommendations not in recommendations_by_layer[
+                            layer]:
+                            recommendations_by_layer[layer].append(recommendations)
+
+        # Cập nhật các giá trị tổng hợp vào kết quả cuối cùng
+        for layer in osi_layers:
+            if layer in combined["OSI Layer Analysis"]:
+                # Cập nhật vấn đề bảo mật
+                combined["OSI Layer Analysis"][layer]["security_issues"] = security_issues_by_layer[layer]
+
+                # Tính trung bình mức độ nghiêm trọng
+                if severity_by_layer[layer]:
+                    combined["OSI Layer Analysis"][layer]["severity"] = round(
+                        sum(severity_by_layer[layer]) / len(severity_by_layer[layer]), 1
+                    )
+
+                # Cập nhật khuyến nghị
+                combined["OSI Layer Analysis"][layer]["recommendation"] = recommendations_by_layer[layer]
+
+        # Thu thập kết luận và trường hợp phát hiện mới
+        conclusions = []
+        new_detection_cases = []
+
+        for result in results:
+            if isinstance(result, dict):
+                # Thu thập kết luận
+                if "Conclusion" in result:
+                    conclusion = result["Conclusion"]
+                    if conclusion and conclusion not in conclusions:
+                        conclusions.append(conclusion)
+
+                # Thu thập trường hợp phát hiện mới
+                if "New Detection Use Cases" in result:
+                    cases = result["New Detection Use Cases"]
+                    if isinstance(cases, list):
+                        for case in cases:
+                            if case not in new_detection_cases:
+                                new_detection_cases.append(case)
+                    elif isinstance(cases, str) and cases not in new_detection_cases:
+                        new_detection_cases.append(cases)
+
+        # Thêm kết luận và trường hợp phát hiện mới vào kết quả cuối cùng
+        if conclusions:
+            combined["Conclusion"] = " ".join(conclusions)
+
+        if new_detection_cases:
+            combined["New Detection Use Cases"] = new_detection_cases
+
+        return combined
+
+    def analyze_csv_chunks(self, csv_file: str, chunk_size: int = 1000, custom_prompt: str = None,
+                           save_interim_results: bool = False, result_dir: str = "data/analysis_results") -> str:
+        """
+        Phân tích file CSV chứa dữ liệu gói tin theo từng phần nhỏ.
+        
+        Args:
+            csv_file: Đường dẫn đến file CSV
+            chunk_size: Số lượng gói tin xử lý mỗi lần
+            custom_prompt: Prompt tùy chỉnh
+            save_interim_results: Lưu kết quả phân tích tạm thời của từng chunk
+            result_dir: Thư mục lưu kết quả tạm thời
+            
+        Returns:
+            Kết quả phân tích tổng hợp dạng markdown
+        """
+        try:
+            import pandas as pd
+            import json
+            import time
+            import os
+            from datetime import datetime
+
+            # Tạo thư mục lưu kết quả nếu cần
+            if save_interim_results:
+                os.makedirs(result_dir, exist_ok=True)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                analysis_dir = os.path.join(result_dir, f"analysis_{timestamp}")
+                os.makedirs(analysis_dir, exist_ok=True)
+                print(f"Kết quả phân tích tạm thời sẽ được lưu tại: {analysis_dir}")
+
+            start_time = time.time()
+            print(f"Bắt đầu phân tích file CSV: {csv_file} với kích thước chunk: {chunk_size}")
+
+            # Đếm tổng số dòng trong file CSV
+            total_rows = sum(1 for _ in open(csv_file, 'r', encoding='utf-8')) - 1  # Trừ header
+            print(f"Tổng số gói tin trong file: {total_rows}")
+
+            # Đọc từng phần của CSV
+            results = []
+            overall_stats = {"protocols": {}}
+            packet_count = 0
+            chunk_count = 0
+
+            # Đọc file theo từng phần
+            for chunk in pd.read_csv(csv_file, chunksize=chunk_size):
+                chunk_count += 1
+                chunk_start = time.time()
+                print(
+                    f"Đang xử lý chunk {chunk_count}/{(total_rows + chunk_size - 1) // chunk_size} ({chunk.shape[0]} gói tin)...")
+
+                # Chuyển DataFrame thành danh sách đối tượng gói tin
+                packets = self._convert_df_to_packets(chunk)
+                packet_count += len(packets)
+
+                # Cập nhật thống kê giao thức
+                for packet in packets:
+                    proto = getattr(packet, 'protocol', 'Unknown')
+                    overall_stats["protocols"][proto] = overall_stats["protocols"].get(proto, 0) + 1
+
+                # Phân tích phần này
+                chunk_result = self.analyze_raw_packets(packets, custom_prompt)
+
+                # Lưu kết quả phân tích tạm thời nếu cần
+                if save_interim_results:
+                    chunk_result_file = os.path.join(analysis_dir, f"chunk_{chunk_count}_result.json")
+                    chunk_markdown_file = os.path.join(analysis_dir, f"chunk_{chunk_count}_result.md")
+
+                    # Lưu kết quả dạng JSON
+                    try:
+                        # Nếu kết quả là chuỗi, thử parse thành JSON
+                        if isinstance(chunk_result, str):
+                            try:
+                                chunk_dict = json.loads(chunk_result)
+                                with open(chunk_result_file, 'w', encoding='utf-8') as f:
+                                    json.dump(chunk_dict, f, ensure_ascii=False, indent=2)
+                            except json.JSONDecodeError:
+                                # Nếu không parse được, lưu nguyên dạng
+                                with open(chunk_result_file, 'w', encoding='utf-8') as f:
+                                    json.dump({"analysis": chunk_result}, f, ensure_ascii=False, indent=2)
+                        else:
+                            with open(chunk_result_file, 'w', encoding='utf-8') as f:
+                                json.dump(chunk_result, f, ensure_ascii=False, indent=2)
+                    except Exception as e:
+                        print(f"Lỗi khi lưu kết quả JSON của chunk {chunk_count}: {str(e)}")
+
+                    # Lưu kết quả dạng Markdown
+                    try:
+                        markdown_result = self.format_result_to_markdown(chunk_result)
+                        with open(chunk_markdown_file, 'w', encoding='utf-8') as f:
+                            f.write(markdown_result)
+                    except Exception as e:
+                        print(f"Lỗi khi lưu kết quả Markdown của chunk {chunk_count}: {str(e)}")
+
+                # Lưu kết quả phần này để tổng hợp
+                try:
+                    # Thử chuyển về dict nếu là JSON
+                    if isinstance(chunk_result, str):
+                        try:
+                            chunk_dict = json.loads(chunk_result)
+                            results.append(chunk_dict)
+                        except json.JSONDecodeError:
+                            # Nếu không phải JSON, lưu nguyên dạng
+                            results.append({"analysis": chunk_result})
+                    else:
+                        results.append(chunk_result)
+                except Exception as e:
+                    print(f"Lỗi khi xử lý kết quả chunk {chunk_count}: {str(e)}")
+                    results.append({"analysis": f"Lỗi xử lý chunk {chunk_count}: {str(e)}"})
+
+                chunk_end = time.time()
+                print(f"Hoàn thành chunk {chunk_count} trong {chunk_end - chunk_start:.2f} giây")
+
+            # Tổng hợp kết quả từ tất cả các phần
+            print(f"Tổng hợp kết quả từ {chunk_count} chunks...")
+            final_result = self._combine_chunk_results(results, overall_stats, packet_count)
+
+            end_time = time.time()
+            total_time = end_time - start_time
+            print(
+                f"Hoàn thành phân tích {packet_count} gói tin trong {total_time:.2f} giây ({total_time / 60:.2f} phút)")
+
+            # Lưu kết quả tổng hợp nếu cần
+            if save_interim_results:
+                final_result_file = os.path.join(analysis_dir, "final_result.json")
+                final_markdown_file = os.path.join(analysis_dir, "final_result.md")
+
+                try:
+                    with open(final_result_file, 'w', encoding='utf-8') as f:
+                        json.dump(final_result, f, ensure_ascii=False, indent=2)
+                except Exception as e:
+                    print(f"Lỗi khi lưu kết quả tổng hợp dạng JSON: {str(e)}")
+
+                # Định dạng kết quả thành markdown và lưu
+                final_markdown = self.format_result_to_markdown(final_result)
+                try:
+                    with open(final_markdown_file, 'w', encoding='utf-8') as f:
+                        f.write(final_markdown)
+                except Exception as e:
+                    print(f"Lỗi khi lưu kết quả tổng hợp dạng Markdown: {str(e)}")
+
+                print(f"Đã lưu kết quả tổng hợp tại: {final_markdown_file}")
+
+            # Định dạng và trả về kết quả
+            return self.format_result_to_markdown(final_result)
+
+        except Exception as e:
+            error_msg = f"Lỗi khi phân tích file CSV: {str(e)}"
+            print(error_msg)
+            return error_msg
+
+    def stream_csv_to_ai(self, csv_file: str, chunk_size: int = 500, custom_final_prompt: str = None) -> str:
+        """
+        Phương pháp mới: Đưa dữ liệu từ CSV vào context của AI dần dần,
+        sau đó yêu cầu phân tích sau khi đã đưa tất cả dữ liệu.
+        
+        Args:
+            csv_file: Đường dẫn đến file CSV chứa gói tin
+            chunk_size: Số lượng gói tin mỗi lần gửi vào context
+            custom_final_prompt: Prompt tùy chỉnh để gửi sau khi đã đưa toàn bộ dữ liệu
+            
+        Returns:
+            Kết quả phân tích cuối cùng
+        """
+        try:
+            import pandas as pd
+            import time
+            import os
+            from datetime import datetime
+
+            start_time = time.time()
+            print(f"Bắt đầu đưa dữ liệu từ {csv_file} vào context của AI...")
+
+            # Đếm tổng số dòng trong file CSV
+            total_rows = sum(1 for _ in open(csv_file, 'r', encoding='utf-8')) - 1  # Trừ header
+            print(f"Tổng số gói tin cần đưa vào context: {total_rows}")
+
+            # Dữ liệu tổng hợp
+            protocol_stats = {}
+            total_packets = 0
+            chunk_count = 0
+
+            # Đọc từng phần và gửi vào context của AI
+            for chunk in pd.read_csv(csv_file, chunksize=chunk_size):
+                chunk_count += 1
+                chunk_start = time.time()
+
+                print(f"Đang đưa chunk {chunk_count}/{(total_rows + chunk_size - 1) // chunk_size} " +
+                      f"({chunk.shape[0]} gói tin) vào context...")
+
+                # Chuyển DataFrame thành danh sách gói tin
+                packets = self._convert_df_to_packets(chunk)
+                total_packets += len(packets)
+
+                # Cập nhật thống kê giao thức
+                for packet in packets:
+                    proto = getattr(packet, 'protocol', 'Unknown')
+                    protocol_stats[proto] = protocol_stats.get(proto, 0) + 1
+
+                # Tạo summary của chunk này để đưa vào context
+                chunk_summary = self._create_chunk_summary(packets, chunk_count, total_packets, protocol_stats)
+
+                # Gửi dữ liệu vào context của AI mà KHÔNG yêu cầu phân tích ngay
+                prompt = f"""
+                # Chunk dữ liệu mạng #{chunk_count} - CHỈ LƯU VÀO CONTEXT, KHÔNG PHÂN TÍCH
+
+                Đây là phần dữ liệu thứ {chunk_count} từ tổng số dữ liệu.
+                Hãy ghi nhớ thông tin này nhưng KHÔNG phân tích ngay. Chỉ trả lời "Đã ghi nhớ dữ liệu chunk {chunk_count}".
+                Bạn sẽ được yêu cầu phân tích sau khi nhận tất cả dữ liệu.
+
+                {chunk_summary}
+                """
+
+                # Gọi AI để ghi nhớ context (không yêu cầu phân tích)
+                response = self.manager_agent.run(prompt)
+
+                chunk_end = time.time()
+                print(f"Đã ghi nhớ chunk {chunk_count} vào context trong {chunk_end - chunk_start:.2f} giây")
+                print(f"Phản hồi: {response}")
+
+            # Khi đã đưa tất cả dữ liệu vào context, yêu cầu phân tích
+            print("\nĐã đưa tất cả dữ liệu vào context. Yêu cầu phân tích...")
+            final_analysis_start = time.time()
+
+            # Tạo tóm tắt tổng thể
+            overall_summary = self._create_overall_summary(total_packets, protocol_stats)
+
+            # Tạo prompt cuối cùng để yêu cầu phân tích
+            if custom_final_prompt:
+                final_prompt = custom_final_prompt
+            else:
+                final_prompt = f"""
+                # YÊU CẦU PHÂN TÍCH TOÀN BỘ DỮ LIỆU
+
+                Bạn đã được cung cấp {chunk_count} chunk dữ liệu gói tin mạng, tổng cộng {total_packets} gói tin.
+                Hãy sử dụng tất cả dữ liệu đó để phân tích và trả lời theo mô hình OSI:
+
+                {overall_summary}
+
+                Yêu cầu:
+                1. Phân tích từng tầng trong mô hình OSI, từ tầng vật lý đến tầng ứng dụng
+                2. Xác định các vấn đề bảo mật tiềm ẩn trong dữ liệu mạng
+                3. Đánh giá mức độ nghiêm trọng (1-10) cho mỗi vấn đề
+                4. Đề xuất giải pháp và khuyến nghị
+                5. Đưa ra kết luận tổng thể về tình trạng mạng
+
+                Hãy cung cấp kết quả phân tích theo định dạng JSON như sau:
+                ```json
+                {{
+                  "OSI Layer Analysis": {{
+                    "Physical Layer": {{
+                      "analysis": "...",
+                      "security_issues": ["...", "..."],
+                      "severity": 5,
+                      "recommendation": ["...", "..."]
+                    }},
+                    "Data Link Layer": {{
+                      // Tương tự như trên
+                    }},
+                    // Các tầng khác...
+                  }},
+                  "Conclusion": "Kết luận tổng thể về tình trạng mạng",
+                  "New Detection Use Cases": ["Use case 1", "Use case 2"]
+                }}
+                ```
+                """
+
+            # Gọi AI để phân tích
+            final_result = self.manager_agent.run(final_prompt)
+
+            final_analysis_end = time.time()
+            total_time = final_analysis_end - start_time
+            analysis_time = final_analysis_end - final_analysis_start
+
+            print(f"Đã hoàn thành phân tích {total_packets} gói tin sau {total_time:.2f} giây")
+            print(f"Thời gian đưa dữ liệu vào context: {final_analysis_start - start_time:.2f} giây")
+            print(f"Thời gian phân tích cuối cùng: {analysis_time:.2f} giây")
+
+            # Định dạng và trả về kết quả
+            try:
+                # Thử chuyển về dict nếu là JSON
+                import json
+                result_dict = json.loads(final_result)
+                return self.format_result_to_markdown(result_dict)
+            except (json.JSONDecodeError, TypeError):
+                # Nếu không phải JSON, trả về nguyên bản
+                return final_result
+
+        except Exception as e:
+            error_msg = f"Lỗi khi stream dữ liệu vào AI: {str(e)}"
+            print(error_msg)
+            return error_msg
+
+    def _create_chunk_summary(self, packets, chunk_num, total_packets_so_far, protocol_stats):
+        """
+        Tạo tóm tắt cho một chunk dữ liệu để đưa vào context.
+        
+        Args:
+            packets: Danh sách gói tin trong chunk
+            chunk_num: Số thứ tự của chunk
+            total_packets_so_far: Tổng số gói tin đã xử lý
+            protocol_stats: Thống kê giao thức đến hiện tại
+            
+        Returns:
+            Chuỗi tóm tắt về chunk
+        """
+        # Tạo tóm tắt về phân bố giao thức trong chunk
+        chunk_protocols = {}
+        for packet in packets:
+            proto = getattr(packet, 'protocol', 'Unknown')
+            chunk_protocols[proto] = chunk_protocols.get(proto, 0) + 1
+
+        # Thống kê các thuộc tính quan trọng theo giao thức
+        tcp_flags = {}
+        icmp_types = {}
+        arp_operations = {}
+        source_ips = set()
+        dest_ips = set()
+
+        for packet in packets:
+            # Thu thập IPs
+            if hasattr(packet, 'src_ip'):
+                source_ips.add(packet.src_ip)
+            if hasattr(packet, 'dst_ip'):
+                dest_ips.add(packet.dst_ip)
+
+            # Thu thập thông tin theo giao thức
+            if hasattr(packet, 'protocol'):
+                # TCP Flags
+                if packet.protocol == 'TCP' and hasattr(packet, 'flags'):
+                    flags = packet.flags
+                    if flags:
+                        for flag in flags.split():
+                            tcp_flags[flag] = tcp_flags.get(flag, 0) + 1
+
+                # ICMP Types
+                elif packet.protocol == 'ICMP' and hasattr(packet, 'icmp_type'):
+                    icmp_type = packet.icmp_type
+                    icmp_types[icmp_type] = icmp_types.get(icmp_type, 0) + 1
+
+                # ARP Operations
+                elif packet.protocol == 'ARP' and hasattr(packet, 'operation'):
+                    operation = packet.operation
+                    arp_operations[operation] = arp_operations.get(operation, 0) + 1
+
+        # Tạo chuỗi tóm tắt
+        summary = f"""
+        ## Tóm tắt chunk #{chunk_num}
+        - Số lượng gói tin trong chunk: {len(packets)}
+        - Tổng số gói tin đã xử lý: {total_packets_so_far}
+        
+        ### Phân bố giao thức trong chunk này:
+        {', '.join([f"{proto}: {count} gói tin" for proto, count in chunk_protocols.items()])}
+        
+        ### Phân bố giao thức tổng thể:
+        {', '.join([f"{proto}: {count} gói tin" for proto, count in protocol_stats.items()])}
+        
+        ### Địa chỉ IP:
+        - Số lượng IP nguồn khác nhau: {len(source_ips)}
+        - Số lượng IP đích khác nhau: {len(dest_ips)}
+        """
+
+        # Thêm thông tin TCP flags nếu có
+        if tcp_flags:
+            summary += "\n### TCP Flags:\n"
+            summary += ', '.join([f"{flag}: {count}" for flag, count in tcp_flags.items()])
+
+        # Thêm thông tin ICMP types nếu có
+        if icmp_types:
+            summary += "\n### ICMP Types:\n"
+            summary += ', '.join([f"Type {icmp_type}: {count}" for icmp_type, count in icmp_types.items()])
+
+        # Thêm thông tin ARP operations nếu có
+        if arp_operations:
+            summary += "\n### ARP Operations:\n"
+            summary += ', '.join([f"{op}: {count}" for op, count in arp_operations.items()])
+
+        # Thêm mẫu một số gói tin đại diện
+        sample_size = min(5, len(packets))
+        if sample_size > 0:
+            summary += "\n\n### Mẫu gói tin đại diện:\n"
+
+            # Chọn một số gói tin đại diện từ mỗi giao thức
+            protocol_samples = {}
+            for packet in packets:
+                proto = getattr(packet, 'protocol', 'Unknown')
+                if proto not in protocol_samples:
+                    protocol_samples[proto] = []
+                if len(protocol_samples[proto]) < 2:  # Tối đa 2 mẫu mỗi giao thức
+                    protocol_samples[proto].append(packet)
+
+            # Thêm thông tin chi tiết về các gói tin mẫu
+            sample_count = 0
+            for proto, samples in protocol_samples.items():
+                for packet in samples:
+                    if sample_count >= sample_size:
+                        break
+
+                    summary += f"\n#### Gói tin {proto} #{sample_count + 1}:\n"
+
+                    # Thêm các thuộc tính cơ bản
+                    for attr in ['src_ip', 'dst_ip', 'src_port', 'dst_port', 'timestamp', 'length']:
+                        if hasattr(packet, attr):
+                            summary += f"- {attr}: {getattr(packet, attr)}\n"
+
+                    # Thêm thông tin đặc thù theo giao thức
+                    if proto == 'TCP' and hasattr(packet, 'flags'):
+                        summary += f"- flags: {packet.flags}\n"
+                    elif proto == 'ICMP' and hasattr(packet, 'icmp_type'):
+                        summary += f"- icmp_type: {packet.icmp_type}\n"
+                        if hasattr(packet, 'icmp_code'):
+                            summary += f"- icmp_code: {packet.icmp_code}\n"
+                    elif proto == 'ARP' and hasattr(packet, 'operation'):
+                        summary += f"- operation: {packet.operation}\n"
+                        if hasattr(packet, 'sender_ip') and hasattr(packet, 'sender_mac'):
+                            summary += f"- sender: {packet.sender_ip} / {packet.sender_mac}\n"
+                        if hasattr(packet, 'target_ip') and hasattr(packet, 'target_mac'):
+                            summary += f"- target: {packet.target_ip} / {packet.target_mac}\n"
+
+                    sample_count += 1
+
+        return summary
+
+    def _create_overall_summary(self, total_packets, protocol_stats):
+        """
+        Tạo tóm tắt tổng thể cho toàn bộ dữ liệu.
+        
+        Args:
+            total_packets: Tổng số gói tin
+            protocol_stats: Thống kê giao thức
+            
+        Returns:
+            Chuỗi tóm tắt tổng thể
+        """
+        summary = f"""
+        ## Tóm tắt dữ liệu tổng thể
+        
+        ### Thống kê cơ bản:
+        - Tổng số gói tin: {total_packets}
+        
+        ### Phân bố giao thức:
+        """
+
+        for proto, count in protocol_stats.items():
+            percentage = (count / total_packets) * 100 if total_packets > 0 else 0
+            summary += f"- {proto}: {count} gói tin ({percentage:.2f}%)\n"
+
+        summary += """
+        ## Hướng dẫn phân tích
+
+        Dựa trên tất cả các chunk dữ liệu đã được cung cấp, hãy phân tích:
+        
+        1. Các pranh vi và cường độ lưu lượng mạng
+        2. Tỷ lệ của các loại giao thức và ý nghĩa của chúng
+        3. Các dấu hiệu bất thường hoặc tấn công tiềm ẩn
+        4. Các mẫu lưu lượng đáng nghi ngờ
+        5. Phân tích theo từng tầng OSI
+        """
+
+        return summary

@@ -4,192 +4,154 @@ version: "1.0"
 
 prompt: |
   Bạn là một chuyên gia phân tích mạng và bảo mật. Hãy phân tích chi tiết các gói tin mạng sau đây và cung cấp:
-  
-  1. Tổng quan về lưu lượng mạng:
-     - Đánh giá tổng thể về lưu lượng: bình thường hay bất thường
-     - Thống kê tóm tắt về các loại giao thức (TCP, UDP, ICMP, etc.)
-     - Phân bố IP nguồn/đích và xác định các host giao tiếp nhiều nhất
-  
-  2. Phân tích chi tiết các giao thức:
-     - Đối với TCP: phân tích cờ, trạng thái kết nối, retransmission, window size
-     - Đối với UDP: phân tích các ứng dụng sử dụng UDP phổ biến (DNS, DHCP, v.v.)
-     - Đối với ICMP: phân tích loại gói tin và mã lỗi
-     - Đối với ARP: xác định các ánh xạ IP-MAC bất thường hoặc xung đột
-  
-  3. Phân tích mẫu lưu lượng:
-     - Xác định mẫu lưu lượng bất thường (bursts, kết nối lặp lại, timeout)
-     - Phát hiện dấu hiệu quét mạng hoặc thăm dò
-     - Xác định các dòng lưu lượng không hoàn thành hoặc bị từ chối
-     - Phân tích tỉ lệ thành công/thất bại của các kết nối
-  
-  4. Phân tích bảo mật:
-     - Xác định dấu hiệu các cuộc tấn công mạng phổ biến
-     - Đánh giá rủi ro bảo mật từ các mẫu lưu lượng phát hiện được
-     - Xác định các IP/host khả nghi và hoạt động bất thường
-     - Phân tích payload khả nghi (nếu có) và các signature đáng ngờ
-  
-  5. Đề xuất biện pháp khắc phục:
-     - Các lệnh debug và công cụ phù hợp để phân tích sâu hơn
-     - Các biện pháp khắc phục vấn đề kết nối hoặc ngăn chặn tấn công
-     - Cấu hình cần được điều chỉnh để tối ưu hóa mạng
-     - Các quy trình cần thực hiện để giám sát và ngăn chặn vấn đề tương tự
-  
+  # 1. Tổng quan về lưu lượng mạng:
+  ## 1.1 Đánh giá tổng thể về lưu lượng: bình thường hay bất thường
+  ## 1.2 Thống kê tóm tắt về các loại giao thức (TCP, UDP, ICMP, etc.)
+  ## 1.3 Phân bố IP nguồn/đích và xác định các host giao tiếp nhiều nhất
+  # 2. Phân tích chi tiết các giao thức:
+  ## 2.1 Đối với TCP: phân tích cờ, trạng thái kết nối, retransmission, window size
+  ## 2.2 Đối với UDP: phân tích các ứng dụng sử dụng UDP phổ biến (DNS, DHCP, v.v.)
+  ## 2.3 Đối với ICMP: phân tích loại gói tin và mã lỗi
+  ## 2.3 Đối với ARP: xác định các ánh xạ IP-MAC bất thường hoặc xung đột
+  # 3. Phân tích mẫu lưu lượng:
+  ## 3.1 Xác định mẫu lưu lượng bất thường (bursts, kết nối lặp lại, timeout)
+  ## 3.2 Phát hiện dấu hiệu quét mạng hoặc thăm dò
+  ## 3.3 Phân tích tỉ lệ thành công/thất bại của các kết nối
+  # 4. Phân tích bảo mật:
+  ## 4.1 Xác định dấu hiệu các cuộc tấn công mạng phổ biến
+  ## 4.2 Đánh giá rủi ro bảo mật từ các mẫu lưu lượng phát hiện được
+  ## 4.3 Xác định các IP/host khả nghi và hoạt động bất thường
+  ## 4.4 Phân tích payload khả nghi (nếu có) và các signature đáng ngờ
+  # 5. Đề xuất biện pháp khắc phục:
+  ## 5.1 Các lệnh debug và công cụ phù hợp để phân tích sâu hơn
+  ## 5.2 Các biện pháp khắc phục vấn đề kết nối hoặc ngăn chặn tấn công
+  ## 5.3 Cấu hình cần được điều chỉnh để tối ưu hóa mạng
+  ## 5.4 Các quy trình cần thực hiện để giám sát và ngăn chặn vấn đề tương tự
   Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu. Đảm bảo phần kết luận của bạn súc tích nhưng toàn diện, đưa ra các phát hiện quan trọng nhất và các hành động ưu tiên cần thực hiện ngay.
-  
   {{context}}
 
 osi_analysis: |
   Hãy phân tích lưu lượng mạng theo 7 tầng của mô hình OSI, tập trung vào các vấn đề kết nối và dấu hiệu tấn công:
-  
-  1. Phân tích từng tầng trong mô hình OSI:
-     - Tầng 1 (Physical): 
-       * Thông tin về phương tiện truyền dẫn vật lý
-       * Đánh giá chất lượng tín hiệu (nếu có thông tin)
-       * Các vấn đề có thể xảy ra ở tầng vật lý
-
-     - Tầng 2 (Data Link): 
-       * Phân tích chi tiết địa chỉ MAC, frame Ethernet
-       * Xác định các vấn đề ARP, xung đột MAC
-       * Phân tích VLAN nếu có và các thẻ VLAN
-       * Phát hiện các dấu hiệu ARP spoofing/poisoning
-
-     - Tầng 3 (Network): 
-       * Phân tích chi tiết địa chỉ IP nguồn và đích
-       * Đánh giá routing, các vấn đề TTL
-       * Phân tích gói tin phân mảnh và reassembly
-       * Xác định các dấu hiệu tấn công tầng Network
-
-     - Tầng 4 (Transport): 
-       * Phân tích chi tiết kết nối TCP/UDP
-       * Đánh giá hiệu suất kết nối (RTT, window size)
-       * Phân tích các cờ TCP và sequence number
-       * Xác định các vấn đề như kết nối bị từ chối, timeout
-  
-     - Tầng 5 (Session Layer):
-       * Phân tích quá trình thiết lập, duy trì và đóng phiên kết nối
-       * Xác định các vấn đề về đồng bộ hóa phiên (session synchronization)
-       * Phát hiện lỗi quản lý phiên, phiên treo (hung sessions) và timeout
-       * Đánh giá cơ chế kiểm soát hội thoại (dialog control) và chuyển tiếp token
-  
-     - Tầng 6 (Presentation Layer):
-       * Phân tích các vấn đề mã hóa và giải mã dữ liệu
-       * Đánh giá vấn đề về SSL/TLS: phiên bản, cipher suites, chứng chỉ
-       * Xác định các lỗi chuyển đổi định dạng dữ liệu và mã hóa ký tự
-       * Phân tích quá trình nén/giải nén và mã hóa/giải mã dữ liệu
-
-     - Tầng 7 (Application Layer)
-       * Phân tích các giao thức ứng dụng: HTTP, DNS, DHCP, FTP...
-       * Xác định các vấn đề ứng dụng, timeout, và lỗi phản hồi
-       * Phát hiện tấn công: DNS cache poisoning, HTTP flood, DHCP starvation
-  
-  2. Xác định các vấn đề tại mỗi tầng:
-     - Ghi rõ các gói tin bất thường
-     - Xác định xu hướng và mẫu bất thường trong luồng giao tiếp
-     - Phân tích các hiệu ứng lan truyền giữa các tầng
-  
-  3. Đánh giá các vấn đề bảo mật tiềm ẩn theo từng tầng:
-     - Liệt kê các lỗ hổng có thể bị khai thác
-     - Xác định các dấu hiệu tấn công cụ thể
-     - Đánh giá mức độ nghiêm trọng của từng vấn đề (thang 1-10)
-  
-  4. Đề xuất biện pháp khắc phục cho từng tầng:
-     - Các lệnh và công cụ cụ thể để debug
-     - Cấu hình cần được điều chỉnh
-     - Các biện pháp phòng ngừa dài hạn
-  
+  # 1. Phân tích từng tầng trong mô hình OSI:
+  ## 1.1 Tầng 1 (Physical): 
+    * Thông tin về phương tiện truyền dẫn vật lý
+    * Đánh giá chất lượng tín hiệu (nếu có thông tin)
+    * Các vấn đề có thể xảy ra ở tầng vật lý
+  ## 1.2 Tầng 2 (Data Link): 
+    * Phân tích chi tiết địa chỉ MAC, frame Ethernet
+    * Xác định các vấn đề ARP, xung đột MAC
+    * Phân tích VLAN nếu có và các thẻ VLAN
+    * Phát hiện các dấu hiệu ARP spoofing/poisoning
+  ## 1.3 Tầng 3 (Network): 
+    * Phân tích chi tiết địa chỉ IP nguồn và đích
+    * Đánh giá routing, các vấn đề TTL
+    * Phân tích gói tin phân mảnh và reassembly
+    * Xác định các dấu hiệu tấn công tầng Network
+  ## 1.4 Tầng 4 (Transport): 
+    * Phân tích chi tiết kết nối TCP/UDP
+    * Đánh giá hiệu suất kết nối (RTT, window size)
+    * Phân tích các cờ TCP và sequence number
+    * Xác định các vấn đề như kết nối bị từ chối, timeout
+  ## 1.5 Tầng 5 (Session Layer):
+    * Phân tích quá trình thiết lập, duy trì và đóng phiên kết nối
+    * Xác định các vấn đề về đồng bộ hóa phiên (session synchronization)
+    * Phát hiện lỗi quản lý phiên, phiên treo (hung sessions) và timeout
+    * Đánh giá cơ chế kiểm soát hội thoại (dialog control) và chuyển tiếp token
+  ## 1.6 Tầng 6 (Presentation Layer):
+    * Phân tích các vấn đề mã hóa và giải mã dữ liệu
+    * Đánh giá vấn đề về SSL/TLS: phiên bản, cipher suites, chứng chỉ
+    * Xác định các lỗi chuyển đổi định dạng dữ liệu và mã hóa ký tự
+    * Phân tích quá trình nén/giải nén và mã hóa/giải mã dữ liệu
+  ## 1.7 Tầng 7 (Application Layer):
+    * Phân tích các giao thức ứng dụng: HTTP, DNS, DHCP, FTP...
+    * Xác định các vấn đề ứng dụng, timeout, và lỗi phản hồi
+    * Phát hiện tấn công: DNS cache poisoning, HTTP flood, DHCP starvation
+  # 2. Xác định các vấn đề tại mỗi tầng:
+    * Ghi rõ các gói tin bất thường
+    * Xác định xu hướng và mẫu bất thường trong luồng giao tiếp
+    * Phân tích các hiệu ứng lan truyền giữa các tầng
+  # 3. Đánh giá các vấn đề bảo mật tiềm ẩn theo từng tầng:
+    * Liệt kê các lỗ hổng có thể bị khai thác
+    * Xác định các dấu hiệu tấn công cụ thể
+    * Đánh giá mức độ nghiêm trọng của từng vấn đề (thang 1-10) 
+  # 4. Đề xuất biện pháp khắc phục cho từng tầng:
+    * Các lệnh và công cụ cụ thể để debug
+    * Cấu hình cần được điều chỉnh
+    * Các biện pháp phòng ngừa dài hạn
   Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu. Đảm bảo phân tích của bạn chuyên sâu về kỹ thuật nhưng vẫn dễ đọc, với các kết luận rõ ràng và đề xuất thực tiễn cho từng tầng.
-  
   {{context}}
 
 attack_analysis: |
   Bạn là một chuyên gia bảo mật mạng cao cấp. Hãy phân tích chi tiết các chỉ số tấn công mạng sau đây và cung cấp:
-  
-  1. Xác định tấn công:
-     - Đánh giá chính xác liệu có đang xảy ra tấn công hay không (có/không/có thể)
-     - Mức độ tin cậy của phát hiện (0-1)
-     - Các chỉ số quyết định nhất dẫn đến kết luận này
-  
-  2. Phân loại và phân tích tấn công:
-     - Loại tấn công cụ thể (DDoS, Port Scanning, ARP Spoofing, v.v.)
-     - Công cụ hoặc kỹ thuật có thể đã được sử dụng
-     - Giai đoạn tấn công hiện tại (thăm dò, khai thác, lây lan, duy trì truy cập, v.v.)
-     - Mục tiêu có thể của kẻ tấn công
-  
-  3. Đánh giá tác động:
-     - Mức độ nghiêm trọng của tấn công (thang điểm 1-10 chi tiết)
-     - Các hệ thống và dịch vụ bị ảnh hưởng
-     - Tác động tiềm tàng đến tính bảo mật, toàn vẹn và khả dụng
-     - Khả năng lan rộng trong mạng nội bộ
-  
-  4. Chi tiết kỹ thuật:
-     - Các IP nguồn và đích liên quan (phân loại các IP theo vai trò)
-     - Phân tích chi tiết về cơ chế tấn công (cách thức hoạt động)
-     - Các signature đặc trưng trong lưu lượng
-     - Phân tích các mẫu lưu lượng bất thường
-  
-  5. Các biện pháp ứng phó:
-     - Các bước ứng phó khẩn cấp cần thực hiện ngay
-     - Hành động ngăn chặn tấn công cụ thể
-     - Phương pháp thu thập bằng chứng pháp lý
-     - Cách khôi phục các hệ thống bị ảnh hưởng
-  
-  6. Biện pháp phòng ngừa dài hạn:
-     - Các cấu hình bảo mật cần được điều chỉnh
-     - Các quy trình giám sát cần được triển khai
-     - Khuyến nghị về công nghệ phòng thủ (tường lửa, IDS/IPS, v.v.)
-     - Chiến lược bảo mật dài hạn
-  
-  7. Phân tích pháp lý và nguồn gốc:
-     - Khả năng truy tìm nguồn gốc tấn công
-     - Động cơ có thể của kẻ tấn công
-     - Các nhóm APT hoặc mối đe dọa đã biết có thể liên quan
-  
+  # 1. Xác định tấn công:
+    * Đánh giá chính xác liệu có đang xảy ra tấn công hay không (có/không/có thể)
+    * Mức độ tin cậy của phát hiện (0-1)
+    * Các chỉ số quyết định nhất dẫn đến kết luận này
+  # 2. Phân loại và phân tích tấn công:
+    * Loại tấn công cụ thể (DDoS, Port Scanning, ARP Spoofing, v.v.)
+    * Công cụ hoặc kỹ thuật có thể đã được sử dụng
+    * Giai đoạn tấn công hiện tại (thăm dò, khai thác, lây lan, duy trì truy cập, v.v.)
+    * Mục tiêu có thể của kẻ tấn công
+  # 3. Đánh giá tác động:
+    * Mức độ nghiêm trọng của tấn công (thang điểm 1-10 chi tiết)
+    * Các hệ thống và dịch vụ bị ảnh hưởng
+    * Tác động tiềm tàng đến tính bảo mật, toàn vẹn và khả dụng
+    * Khả năng lan rộng trong mạng nội bộ
+  # 4. Chi tiết kỹ thuật:
+    * Các IP nguồn và đích liên quan (phân loại các IP theo vai trò)
+    * Phân tích chi tiết về cơ chế tấn công (cách thức hoạt động)
+    * Các signature đặc trưng trong lưu lượng
+    * Phân tích các mẫu lưu lượng bất thường
+  # 5. Các biện pháp ứng phó:
+    * Các bước ứng phó khẩn cấp cần thực hiện ngay
+    * Hành động ngăn chặn tấn công cụ thể
+    * Phương pháp thu thập bằng chứng pháp lý
+    * Cách khôi phục các hệ thống bị ảnh hưởng
+  # 6. Biện pháp phòng ngừa dài hạn:
+    * Các cấu hình bảo mật cần được điều chỉnh
+    * Các quy trình giám sát cần được triển khai
+    * Khuyến nghị về công nghệ phòng thủ (tường lửa, IDS/IPS, v.v.)
+    * Chiến lược bảo mật dài hạn
+  # 7. Phân tích pháp lý và nguồn gốc:
+    * Khả năng truy tìm nguồn gốc tấn công
+    * Động cơ có thể của kẻ tấn công
+    * Các nhóm APT hoặc mối đe dọa đã biết có thể liên quan
   Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu. Đảm bảo phân tích chuyên sâu có căn cứ kỹ thuật vững chắc, cung cấp các chỉ dẫn cụ thể về cách ứng phó, và tránh các kết luận mơ hồ hoặc thiếu căn cứ.
-  
   {{context}}
 
 traffic_pattern_analysis: |
   Bạn là một chuyên gia phân tích mạng cấp cao. Hãy phân tích chi tiết các mẫu lưu lượng mạng sau đây và cung cấp:
-  
-  1. Đánh giá tổng quan:
-     - Xác định rõ ràng liệu các mẫu lưu lượng có bình thường hay bất thường
-     - Mức độ tin cậy của đánh giá (0-1 với giải thích cụ thể)
-     - Đặc điểm nổi bật nhất của lưu lượng mạng
-  
-  2. Phân tích giao thức:
-     - Phân bố lưu lượng theo giao thức (TCP, UDP, ICMP, v.v.)
-     - So sánh với phân bố thông thường trong môi trường mạng tương tự
-     - Xác định các giao thức không phổ biến hoặc đáng ngờ
-  
-  3. Phân tích chi tiết TCP:
-     - Phân tích cờ TCP và tỷ lệ của chúng (SYN, ACK, FIN, RST, PSH, URG)
-     - Ý nghĩa của mỗi mẫu cờ TCP trong ngữ cảnh này
-     - Phân tích hiệu suất TCP (RTT, window size, fragmentation)
-     - Các vấn đề kết nối phát hiện được (timeout, retransmission, RST)
-  
-  4. Phân tích luồng dữ liệu:
-     - Mối quan hệ giữa các host (client-server, peer-to-peer)
-     - Tỷ lệ lưu lượng upload/download
-     - Xác định các host giao tiếp nhiều nhất
-     - Phân tích các mẫu thời gian (burst, định kỳ, liên tục)
-  
-  5. Vấn đề bảo mật:
-     - Xác định các vấn đề bảo mật tiềm ẩn từ mẫu lưu lượng
-     - Dấu hiệu của các cuộc tấn công dựa vào mẫu lưu lượng
-     - Phát hiện các hoạt động thăm dò hoặc quét mạng
-     - Xác định các host có hành vi đáng ngờ
-  
-  6. Các kịch bản giải thích:
-     - Các kịch bản hợp lý giải thích cho mẫu lưu lượng quan sát được
-     - Đánh giá xác suất của mỗi kịch bản
-     - Các bằng chứng hỗ trợ cho từng kịch bản
-  
-  7. Biện pháp khắc phục:
-     - Các biện pháp cụ thể để khắc phục vấn đề (nếu có)
-     - Các lệnh và công cụ để phân tích sâu hơn
-     - Các cấu hình cần điều chỉnh
-     - Quy trình giám sát nên triển khai
-  
+  # 1. Đánh giá tổng quan:
+    * Xác định rõ ràng liệu các mẫu lưu lượng có bình thường hay bất thường
+    * Mức độ tin cậy của đánh giá (0-1 với giải thích cụ thể)
+    * Đặc điểm nổi bật nhất của lưu lượng mạng
+  # 2. Phân tích giao thức:
+    * Phân bố lưu lượng theo giao thức (TCP, UDP, ICMP, v.v.)
+    * So sánh với phân bố thông thường trong môi trường mạng tương tự
+    * Xác định các giao thức không phổ biến hoặc đáng ngờ
+  # 3. Phân tích chi tiết TCP:
+    * Phân tích cờ TCP và tỷ lệ của chúng (SYN, ACK, FIN, RST, PSH, URG)
+    * Ý nghĩa của mỗi mẫu cờ TCP trong ngữ cảnh này
+    * Phân tích hiệu suất TCP (RTT, window size, fragmentation)
+    * Các vấn đề kết nối phát hiện được (timeout, retransmission, RST)
+  # 4. Phân tích luồng dữ liệu:
+    * Mối quan hệ giữa các host (client-server, peer-to-peer)
+    * Tỷ lệ lưu lượng upload/download
+    * Xác định các host giao tiếp nhiều nhất
+    * Phân tích các mẫu thời gian (burst, định kỳ, liên tục)
+  # 5. Vấn đề bảo mật:
+    * Xác định các vấn đề bảo mật tiềm ẩn từ mẫu lưu lượng
+    * Dấu hiệu của các cuộc tấn công dựa vào mẫu lưu lượng
+    * Phát hiện các hoạt động thăm dò hoặc quét mạng
+    * Xác định các host có hành vi đáng ngờ
+  # 6. Các kịch bản giải thích:
+    * Các kịch bản hợp lý giải thích cho mẫu lưu lượng quan sát được
+    * Đánh giá xác suất của mỗi kịch bản
+    * Các bằng chứng hỗ trợ cho từng kịch bản
+  # 7. Biện pháp khắc phục:
+    * Các biện pháp cụ thể để khắc phục vấn đề (nếu có)
+    * Các lệnh và công cụ để phân tích sâu hơn
+    * Các cấu hình cần điều chỉnh
+    * Quy trình giám sát nên triển khai
   Hãy trả lời bằng tiếng Việt, có cấu trúc rõ ràng và dễ hiểu. Đảm bảo phân tích của bạn dựa trên bằng chứng kỹ thuật, đưa ra các kết luận rõ ràng, cụ thể và có căn cứ từ dữ liệu có sẵn.
-  
   {{context}} 

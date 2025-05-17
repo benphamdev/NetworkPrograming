@@ -3,18 +3,21 @@ ChatHandler - Quản lý hội thoại chat với người dùng về phân tíc
 Lớp này xử lý các truy vấn từ người dùng và tạo phản hồi dựa trên kết quả phân tích từ file PCAP.
 Nó là con của Gradio gateway
 """
-from typing import Dict, List, Optional, Any
 import os
 from collections import Counter
-from src.interfaces.gateways.smolagent_gateway import SmolagentGateway
-from src.interfaces.gateways.protocol_analyzer import ProtocolAnalyzer
-from src.interfaces.presenters.summary_creator import SummaryCreator
+from typing import Dict, List, Optional, Any
+
 from src.infrastructure.repositories.file_packet_repository import FilePacketRepository
+from src.interfaces.gateways.protocol_analyzer import ProtocolAnalyzer
+from src.interfaces.gateways.smolagent_gateway import SmolagentGateway
+from src.interfaces.presenters.summary_creator import SummaryCreator
+
 
 class ChatHandler:
     """Quản lý hội thoại chat với người dùng về phân tích mạng."""
-    
-    def __init__(self, smolagent_gateway: Optional[SmolagentGateway] = None, protocol_analyzer: Optional[ProtocolAnalyzer] = None):
+
+    def __init__(self, smolagent_gateway: Optional[SmolagentGateway] = None,
+                 protocol_analyzer: Optional[ProtocolAnalyzer] = None):
         """
         Khởi tạo chat handler.
         
@@ -26,10 +29,11 @@ class ChatHandler:
         self.latest_pcap_file: Optional[str] = None
         self.latest_results: Optional[Dict[str, Any]] = None
         self.smolagent_gateway = smolagent_gateway if smolagent_gateway is not None else SmolagentGateway()
-        self.protocol_analyzer = protocol_analyzer if protocol_analyzer is not None else ProtocolAnalyzer(self.smolagent_gateway)
+        self.protocol_analyzer = protocol_analyzer if protocol_analyzer is not None else ProtocolAnalyzer(
+            self.smolagent_gateway)
         self.summary_creator = SummaryCreator()
         self.packet_repository = FilePacketRepository()
-    
+
     def set_latest_results(self, results: Optional[Dict[str, Any]]):
         """Cập nhật kết quả phân tích mới nhất."""
         self.latest_results = results
@@ -85,55 +89,55 @@ class ChatHandler:
         try:
             # Tải gói tin từ file PCAP bằng FilePacketRepository
             packets = self.packet_repository.load_pcap_file(file_path)
-            
+
             if not packets:
                 return {"error": f"Không thể tải gói tin từ file {file_path}"}
-            
+
             # Lưu đường dẫn file PCAP hiện tại
             self.set_latest_pcap_file(file_path)
-            
+
             # Tạo kết quả phân tích cơ bản
             results = {
                 "packets": packets,
                 "summary": self._create_packet_summary(packets),
                 "protocol_distribution": self._get_protocol_distribution(packets)
             }
-            
+
             # Lưu kết quả phân tích
             self.set_latest_results(results)
-            
+
             return results
         except Exception as e:
             return {"error": f"Lỗi khi tải file PCAP: {str(e)}"}
-    
+
     def _create_packet_summary(self, packets: List) -> Dict[str, Any]:
         """Tạo tóm tắt từ danh sách gói tin."""
         if not packets:
             return {}
-        
+
         # Lấy thời gian bắt đầu và kết thúc
         timestamps = [p.timestamp for p in packets if hasattr(p, 'timestamp')]
-        
+
         if not timestamps:
             return {}
-        
+
         start_time = min(timestamps)
         end_time = max(timestamps)
-        
+
         return {
             "start_time": start_time.strftime("%Y-%m-%d %H:%M:%S"),
             "end_time": end_time.strftime("%Y-%m-%d %H:%M:%S"),
             "total_packets": len(packets)
         }
-    
+
     def _get_protocol_distribution(self, packets: List) -> Dict[str, int]:
         """Lấy phân bố giao thức từ danh sách gói tin."""
         protocol_counts = Counter()
-        
+
         for packet in packets:
             if hasattr(packet, 'protocol'):
                 protocol_counts[packet.protocol] += 1
-        
+
         return dict(protocol_counts)
 
     def get_context_for_general_query(self, results_param: Optional[Dict[str, Any]]) -> str:
@@ -150,7 +154,7 @@ class ChatHandler:
         summary_data = current_results.get("summary", {})
         if "start_time" in summary_data and "end_time" in summary_data:
             summary_parts.append(f"Thời gian ghi từ {summary_data['start_time']} đến {summary_data['end_time']}.")
-        
+
         protocol_dist = current_results.get("protocol_distribution")
         if protocol_dist and isinstance(protocol_dist, dict):
             protocols = ", ".join([f"{p} ({c})" for p, c in protocol_dist.items()])
@@ -180,7 +184,9 @@ class ChatHandler:
         if "phân tích chi tiết theo mô hình osi" in query_lower or "osi model analysis" in query_lower:
             return self._get_osi_analysis(current_results)
 
-        attack_keywords = ["tấn công", "attack", "spoofing", "dấu hiệu arp", "syn flood", "dos", "exploit", "vulnerability", "malware", "ddos", "port scan", "quét cổng"]
+        attack_keywords = ["tấn công", "attack", "spoofing", "dấu hiệu arp", "syn flood", "dos", "exploit",
+                           "vulnerability", "malware", "ddos", "port scan", "quét cổng"]
+        
         if any(keyword in query_lower for keyword in attack_keywords):
             return self._analyze_attack_query(query, current_results)
 
@@ -199,17 +205,18 @@ class ChatHandler:
             return self._analyze_dangerous_parameters(current_results)
 
         context_for_agent = self.get_context_for_general_query(current_results)
-        if "Không có dữ liệu gói tin." in context_for_agent and not ("tải lên file pcap" in query_lower or "hướng dẫn" in query_lower or "upload pcap" in query_lower):
+        if "Không có dữ liệu gói tin." in context_for_agent and not (
+                "tải lên file pcap" in query_lower or "hướng dẫn" in query_lower or "upload pcap" in query_lower):
             return "Không có dữ liệu gói tin để phân tích. Vui lòng tải lên file PCAP để tôi có thể hỗ trợ bạn."
 
         try:
             if not self.smolagent_gateway:
                 return "Lỗi: Smolagent gateway chưa được khởi tạo."
-            
+
             prompt = f"User query: \"{query}\". \nAvailable data context: \"{context_for_agent}\"."
             if self.latest_pcap_file:
                 prompt += f"\nAnalysis is based on file: {self.latest_pcap_file}."
-            
+
             response = self.smolagent_gateway.general_agent.run(prompt)
             return response
         except Exception as e:
@@ -237,14 +244,14 @@ class ChatHandler:
             'https': ['https', 'giao thức https', 'gói https', 'tls', 'ssl'],
             'ethernet': ['ethernet', 'giao thức ethernet', 'gói ethernet', 'lớp liên kết']
         }
-        
+
         # Kiểm tra từng giao thức
         for proto_keys in protocols.values():
             if any(key in query for key in proto_keys):
                 return True
-                
+
         return False
-        
+
     def _extract_protocol_from_query(self, query: str) -> str:
         """
         Trích xuất tên giao thức từ truy vấn.
@@ -266,13 +273,13 @@ class ChatHandler:
             'https': ['https', 'giao thức https', 'gói https', 'tls', 'ssl'],
             'ethernet': ['ethernet', 'giao thức ethernet', 'gói ethernet', 'lớp liên kết']
         }
-        
+
         for protocol, keywords in protocols_map.items():
             if any(keyword in query for keyword in keywords):
                 return protocol
-                
+
         return None
-        
+
     def _analyze_protocol_query(self, protocol: str, query: str, results_param: Optional[Dict[str, Any]]) -> str:
         """
         Phân tích truy vấn liên quan đến giao thức cụ thể.
@@ -288,10 +295,10 @@ class ChatHandler:
         current_results = self._get_effective_results(results_param)
         if not current_results or not current_results.get("packets"):
             return f"Không có dữ liệu gói tin để phân tích giao thức {protocol}. Vui lòng tải lên file PCAP."
-            
+
         # Lấy danh sách gói tin từ kết quả
         packets = current_results.get("packets", [])
-        
+
         # Xác định loại phân tích dựa vào truy vấn
         analysis_type = None
         if "bắt tay" in query or "handshake" in query or "kết nối" in query:
@@ -306,25 +313,25 @@ class ChatHandler:
             analysis_type = "error"
         elif "thống kê" in query or "số liệu" in query or "tần suất" in query or "phân bố" in query:
             analysis_type = "statistics"
-        
+
         # Thực hiện phân tích giao thức
         try:
             analysis_result = self.protocol_analyzer.analyze_protocol(protocol, packets, analysis_type)
-            
+
             # Kiểm tra kết quả và trả về phân tích
             if isinstance(analysis_result, dict) and "analysis" in analysis_result:
                 if analysis_result.get("status") == "no_data":
                     return f"Không tìm thấy gói tin {protocol} trong dữ liệu đã phân tích."
-                    
+
                 # Thêm tiêu đề và thông tin file
                 file_name = os.path.basename(self.latest_pcap_file) if self.latest_pcap_file else "đã tải lên"
                 header = f"# Phân tích giao thức {protocol}\n\n"
                 header += f"*File: {file_name}*\n\n"
-                
+
                 # Thêm thông tin số lượng gói tin
                 if "packet_count" in analysis_result:
                     header += f"Phân tích dựa trên **{analysis_result['packet_count']}** gói tin {protocol}.\n\n"
-                    
+
                 return header + analysis_result["analysis"]
             else:
                 return f"Không thể phân tích giao thức {protocol}. Lỗi định dạng kết quả."
@@ -345,10 +352,10 @@ class ChatHandler:
         current_results = self._get_effective_results(results_param)
         if not current_results or not current_results.get("packets"):
             return "Không có dữ liệu gói tin để phân tích tấn công. Vui lòng tải lên file PCAP."
-            
+
         # Lấy danh sách gói tin từ kết quả
         packets = current_results.get("packets", [])
-        
+
         try:
             # Phân tích tấn công sử dụng attack_agent từ SmolagentGateway
             return self.smolagent_gateway.attack_agent.run(
@@ -364,7 +371,8 @@ class ChatHandler:
         if not current_results or not current_results.get("packets"):
             return "Không có dữ liệu gói tin để tạo phân tích OSI. Vui lòng tải lên file PCAP."
         try:
-            return self.smolagent_gateway.osi_agent.run(results_summary=str(current_results.get("summary", {})), packets_data=current_results.get("packets", []))
+            return self.smolagent_gateway.osi_agent.run(results_summary=str(current_results.get("summary", {})),
+                                                        packets_data=current_results.get("packets", []))
         except Exception as e:
             return f"Lỗi khi phân tích OSI: {str(e)}"
 
@@ -373,7 +381,8 @@ class ChatHandler:
         if not current_results or not current_results.get("packets"):
             return "Không có dữ liệu gói tin để phân tích cờ TCP. Vui lòng tải lên file PCAP."
         try:
-            tcp_packets = [p for p in current_results.get("packets", []) if hasattr(p, 'haslayer') and p.haslayer('TCP')]
+            tcp_packets = [p for p in current_results.get("packets", []) if
+                           hasattr(p, 'haslayer') and p.haslayer('TCP')]
             if not tcp_packets:
                 return "Không tìm thấy gói tin TCP để phân tích cờ."
             return self.smolagent_gateway.tcp_flags_agent.run(tcp_packets=tcp_packets)
@@ -385,7 +394,8 @@ class ChatHandler:
         if not current_results or not current_results.get("packets"):
             return "Không có dữ liệu gói tin để dự đoán vấn đề mạng. Vui lòng tải lên file PCAP."
         try:
-            return self.smolagent_gateway.prediction_agent.run(results_summary=str(current_results.get("summary", {})), packets_data=current_results.get("packets", []))
+            return self.smolagent_gateway.prediction_agent.run(results_summary=str(current_results.get("summary", {})),
+                                                               packets_data=current_results.get("packets", []))
         except Exception as e:
             return f"Lỗi khi dự đoán vấn đề mạng: {str(e)}"
 
@@ -402,7 +412,8 @@ class ChatHandler:
         except Exception as e:
             return f"Lỗi khi phân tích thông số nguy hiểm: {str(e)}"
 
-    def get_initial_chat_message(self, results_param: Optional[Dict[str, Any]], pcap_file_param: Optional[str] = None) -> str:
+    def get_initial_chat_message(self, results_param: Optional[Dict[str, Any]],
+                                 pcap_file_param: Optional[str] = None) -> str:
         self.set_latest_results(results_param)
         if pcap_file_param:
             self.set_latest_pcap_file(pcap_file_param)
@@ -411,10 +422,10 @@ class ChatHandler:
 
         if not current_results or not current_results.get("packets"):
             return "Chào mừng bạn đến với Trợ lý Phân tích Mạng! Hiện tại chưa có dữ liệu gói tin nào được tải lên. Vui lòng tải lên một file PCAP để bắt đầu."
-        
+
         num_packets = len(current_results.get("packets", []))
         file_info = f"File PCAP \"{self.latest_pcap_file}\" đã được tải" if self.latest_pcap_file else "Dữ liệu PCAP đã được tải"
-        
+
         summary_lines = [
             f"Chào mừng bạn đến với Trợ lý Phân tích Mạng!",
             f"{file_info} với {num_packets} gói tin."
@@ -422,11 +433,13 @@ class ChatHandler:
         pcap_summary = current_results.get("summary", {})
         if pcap_summary.get("start_time") and pcap_summary.get("end_time"):
             summary_lines.append(f"Thời gian ghi: {pcap_summary['start_time']} đến {pcap_summary['end_time']}.")
-        
+
         protocol_dist = current_results.get("protocol_distribution")
         if protocol_dist:
             common_protocols = sorted(protocol_dist.items(), key=lambda item: item[1], reverse=True)
-            summary_lines.append(f"Các giao thức phổ biến: {', '.join([f'{p} ({c})' for p, c in common_protocols[:3]])}.")
-        
-        summary_lines.append("Bạn muốn tôi phân tích gì cụ thể không (ví dụ: 'phân tích TCP', 'dấu hiệu arp spoofing', 'thống kê HTTP')?")
+            summary_lines.append(
+                f"Các giao thức phổ biến: {', '.join([f'{p} ({c})' for p, c in common_protocols[:3]])}.")
+
+        summary_lines.append(
+            "Bạn muốn tôi phân tích gì cụ thể không (ví dụ: 'phân tích TCP', 'dấu hiệu arp spoofing', 'thống kê HTTP')?")
         return "\n".join(summary_lines)
